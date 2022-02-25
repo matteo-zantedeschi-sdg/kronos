@@ -1,5 +1,5 @@
 from kronos.ml_flower import MLFlower
-from kronos.models.krns_prophet import KRNSProphet
+from kronos.models.krns_naive import KRNSNaive
 from mlflow.models.signature import infer_signature
 from datetime import datetime
 import pandas as pd
