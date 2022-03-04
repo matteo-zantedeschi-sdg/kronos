@@ -1,6 +1,18 @@
-name: forecast
+name: Forecast
 
 entry_points:
+  # train MLflow model
+  train:
+    parameters:
+      training_data: {type: string, default: ""}
+    command: "python train.py {training_data}"
+
+  # Forecast on all timeseries.
+  forecast:
+    parameters:
+      data_path: {type: string, default: ""}
+    command: "python forecast.py  {data_path}"
+
   main:
     parameters:
       data_path: {type: string, default: ""}
