@@ -1,5 +1,7 @@
 name: Forecast
 
+conda_env: conda.yaml
+
 entry_points:
   # train MLflow model
   train:
