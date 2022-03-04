@@ -4,9 +4,3 @@ channels:
 dependencies:
   - python=3.8
   - pip
-  - pip:
-      - pystan==2.19.1.1
-      - fbprophet
-      - prophet
-      - pandas
-      - mlflow

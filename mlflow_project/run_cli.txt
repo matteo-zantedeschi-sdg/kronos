@@ -1,3 +1,3 @@
 $Env:MLFLOW_TRACKING_URI = "databricks"
 mlflow run https://github.com/SDGGroup/kronos#mlflow_project/ -b databricks --backend-config C:\Users\zantedeschim\PycharmProjects\kronos\mlflow_project\clust
-er_config.json --experiment-id 575501044793272 --no-conda -P data_path='dbfs:/mnt/ds/delta/ds_pdr_consumi_forecast_hera_calibro45_sample/'
+er_config.json --experiment-id 575501044793272 --no-conda -P data_path=dbfs:/mnt/ds/delta/ds_pdr_consumi_forecast_hera_calibro45_sample/
