@@ -1,0 +1,35 @@
+{
+  "new_cluster": {
+    "spark_version": "9.1.x-scala2.12",
+    "num_workers": 8,
+    "node_type_id": "Standard_DS3_v2"
+  },
+  "libraries": [
+    {
+      "pypi": {
+        "package": "pystan",
+        "version": "2.19.1.1"
+      }
+    },
+    {
+      "pypi": {
+        "package": "fbprophet"
+      }
+    },
+    {
+      "pypi": {
+        "package": "prophet"
+      }
+    },
+    {
+      "pypi": {
+        "package": "pandas"
+      }
+    },
+    {
+      "pypi": {
+        "package": "mlflow"
+      }
+    }
+  ]
+}

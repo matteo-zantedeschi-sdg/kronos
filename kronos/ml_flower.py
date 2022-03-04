@@ -5,6 +5,7 @@ from mlflow.entities.model_registry.model_version_status import ModelVersionStat
 import mlflow
 import time
 
+
 class MLFlower:
 
     def __init__(self):
@@ -93,13 +94,13 @@ class MLFlower:
 
         # Unit test
         # if model_flavor_tag == 'prophet':
-            # Retrieve model and make predictions
+        # Retrieve model and make predictions
         model = mlflow.prophet.load_model(f"models:/{model_version.name}/{model_version.current_stage}")
         pred_conf = model.make_future_dataframe(periods=unit_test_days, freq='d', include_history=False)
         pred = model.predict(pred_conf)
         # else:
-            # print(f"Model flavor {model_flavor_tag} not managed.")
-            # pred = None
+        # print(f"Model flavor {model_flavor_tag} not managed.")
+        # pred = None
 
         # Check quality
         out = 'OK' if len(pred) == unit_test_days else 'KO'

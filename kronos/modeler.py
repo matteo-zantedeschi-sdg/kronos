@@ -1,5 +1,5 @@
 from kronos.ml_flower import MLFlower
-from kronos.models.krns_naive import KRNSNaive
+from kronos.models.krns_prophet import KRNSProphet
 from mlflow.models.signature import infer_signature
 from datetime import datetime
 import pandas as pd
@@ -42,9 +42,9 @@ class Modeler:
 
         # Parameters
         n_test = 7
-        pdr_code = data['pdr'].iloc[0]
+        pdr_code = data.iloc[0].pdr
         model_flavor = 'prophet'
-        run_name = f"{model_flavor}_{str(datetime.now()).replace(' ', '_')}"
+        run_name = f"{pdr_code}_{model_flavor}_{str(datetime.now()).replace(' ', '_')}"
         interval_width = 0.95
         growth = 'linear'
         daily_seasonality = False
@@ -101,15 +101,23 @@ class Modeler:
             # Predict on test set (both trained and production model)
             trained_model_test_pred = krns_prophet.predict(data=test_data, periods=n_test, freq='d',
                                                            include_history=False)
+
             # Log prediction figure - TODO
             # predict_fig = model.plot(test_pred, xlabel='date', ylabel='consumptions').savefig('prophet.png')
             # mlflow.log_artifact("prophet.png")
-            # TODO: Gestire il caso in cui non c'è un modello in PROD
-            prod_model = mlflow.prophet.load_model(f"models:/{pdr_code}/Production")
-            krns_prod_model = KRNSProphet(date_column='date', key_column='pdr', metric_column='volume_giorno',
-                                          model=prod_model)
-            prod_model_test_pred = krns_prod_model.predict(data=test_data, periods=n_test, freq='d',
-                                                           include_history=False)
+
+            prod_model_fl = False
+            try:
+                prod_model = mlflow.prophet.load_model(f"models:/{pdr_code}/Production")
+                prod_model_fl = True
+            except Exception as e:
+                print(e)
+
+            if prod_model_fl:
+                krns_prod_model = KRNSProphet(date_column='date', key_column='pdr', metric_column='volume_giorno',
+                                              model=prod_model)
+                prod_model_test_pred = krns_prod_model.predict(data=test_data, periods=n_test, freq='d',
+                                                               include_history=False)
 
             # Evaluate model
             print("Evaluate the model and log metrics")
@@ -117,18 +125,19 @@ class Modeler:
                                                         predicted_col='yhat', true_value_col='y')
             # Log metric for trained model
             mlflow.log_metric("rmse", trained_model_rmse)
-            prod_model_rmse = Modeler.evaluate_model(data=prod_model_test_pred, metric='rmse', predicted_col='yhat',
-                                                     true_value_col='y')
+            if prod_model_fl:
+                prod_model_rmse = Modeler.evaluate_model(data=prod_model_test_pred, metric='rmse', predicted_col='yhat',
+                                                         true_value_col='y')
 
-            # Competition
+                # Competition
 
-            # Combine all metrics
-            # TODO: Now is just rmse, later could be a combination of all metrics
-            trained_model_score = -trained_model_rmse
-            prod_model_score = -prod_model_rmse
+                # Combine all metrics
+                # TODO: Now is just rmse, later could be a combination of all metrics
+                trained_model_score = -trained_model_rmse
+                prod_model_score = -prod_model_rmse
 
             # Compare score
-            if prod_model_rmse > trained_model_rmse:
+            if prod_model_fl and prod_model_score > trained_model_score:
                 print("Prod model is still winning.")
             else:
                 print("New trained model is better than previous production model.")
@@ -150,6 +159,7 @@ class Modeler:
             krns_model = KRNSProphet(date_column='date', key_column='pdr', metric_column='volume_giorno', model=model)
 
             # Predict with new model
-            pred = krns_model.predict(data=data, periods=forecast_horizon, freq='d', include_history=False)
+            pred = krns_model.predict(data=data, periods=forecast_horizon, freq='d', include_history=False,
+                                      final_prediction=True)
 
             return pred

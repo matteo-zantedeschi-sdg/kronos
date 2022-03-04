@@ -1,0 +1,13 @@
+Istruzioni Databricks CLI
+
+Reference: https://docs.microsoft.com/en-us/azure/databricks/dev-tools/cli/
+
+0. Inizializzare un virtualenv (se non ancora fatto: python -m venv .venv) e settarlo come interprete
+1. Aggiungere databricks-cli in un file chiamato requirements.txt
+2. Eseguire da terminale: pip install -r .\requirements.txt
+3. Andare su Databricks e generare un personal access token
+4. Eseguire da terminale: databricks configure --token
+5. Viene promptato l'host: https://adb-<workspace-id>.<random-number>.azuredatabricks.net
+6. Viene promptato il proprio personal access token, inserirlo
+7. Queste informazioni saranno salvate in %USERPROFILE%\.databrickscfg
+8. Interagire con databricks cli con: databricks --help
