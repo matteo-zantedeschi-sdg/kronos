@@ -11,6 +11,7 @@ import mlflow.prophet
 import mlflow.tracking
 import mlflow.projects
 import pandas as pd
+import spark
 from pyspark.sql.types import StructType, StructField, StringType, DateType, FloatType
 
 
@@ -35,7 +36,7 @@ def run(data_path):
                     "training_data": data,
                 },
                 experiment_id=experiment_id,
-                backend="databricks",
+                backend="databricks", #TODO: Forse da cambiare in local?
                 use_conda=False,
                 synchronous=False,
             )
