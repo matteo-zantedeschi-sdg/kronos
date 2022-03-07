@@ -11,3 +11,4 @@ dependencies:
       - prophet
       - pandas
       - mlflow
+      - pyspark
