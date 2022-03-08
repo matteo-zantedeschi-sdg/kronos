@@ -11,7 +11,6 @@ import mlflow.prophet
 import mlflow.tracking
 import mlflow.projects
 import pandas as pd
-import spark
 from pyspark.sql.types import StructType, StructField, StringType, DateType, FloatType
 
 
