@@ -6,16 +6,19 @@ entry_points:
   # train MLflow model
   train:
     parameters:
-      training_data: {type: string, default: ""}
-    command: "python train.py {training_data}"
+      data: {type: string, default: ""}
+      run_id: {type: string, default: ""}
+    command: "python train.py {data} {run_id}"
 
   # Forecast on all timeseries.
   forecast:
     parameters:
       data_path: {type: string, default: ""}
-    command: "python forecast.py  {data_path}"
+      experiment_name: {type: string, default: ""}
+    command: "python forecast.py  {data_path} {experiment_name}"
 
   main:
     parameters:
       data_path: {type: string, default: ""}
-    command: "python forecast.py {data_path}"
+      experiment_name: {type: string, default: ""}
+    command: "python forecast.py {data_path} {experiment_name}"

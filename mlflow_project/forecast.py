@@ -6,11 +6,11 @@ results.
 Several runs can be run in parallel.
 """
 import click
-import time
 import mlflow
 import mlflow.prophet
 import mlflow.projects
 import pandas as pd
+import time
 from mlflow.tracking import MlflowClient
 from mlflow.utils.mlflow_tags import MLFLOW_PARENT_RUN_ID
 from mlflow.entities import ViewType
@@ -24,7 +24,9 @@ spark = SparkSession(sc)
 
 @click.command(help="Distribute forecasting through a pandas UDF")
 @click.argument("data_path")
-def run(data_path):
+@click.argument("experiment_name")
+def run(data_path: str, experiment_name: str):
+
     # Read delta table from path provided
     df = spark.read.format("delta").load(f"{data_path}")
 
@@ -37,23 +39,22 @@ def run(data_path):
     # Define pandas UDF
     def forecast(data: pd.DataFrame) -> pd.DataFrame:
 
-        # Retrieve pdr code
-        pdr_code = data['pdr'].iloc[0]
+        # Create child run
+        child_run = client.create_run(
+            experiment_id=experiment,
+            tags={
+                MLFLOW_PARENT_RUN_ID: parent_run_id
+            },
+        )
 
-        # Define experiment name
-        experiment_name = f'/mlflow/experiments/{pdr_code}'
-
-        # with mlflow.start_run(run_name=pdr_code, nested=True) as child_run:
-        try:
-            experiment = client.create_experiment(experiment_name)
-        except:
-            experiment = client.get_experiment_by_name(experiment_name).experiment_id
-
+        # Launch train
         p = mlflow.projects.run(
+            run_id=child_run.info.run_id,
             uri=".",
             entry_point="train",
             parameters={
-                "training_data": data.to_json(),
+                "data": data.to_json(),
+                "run_id": child_run.info.run_id
             },
             experiment_id=experiment,
             backend="local",
@@ -68,20 +69,36 @@ def run(data_path):
 
     # Define the client
     client = MlflowClient()
+
+    # Define experiment name
+    experiment_path = f'/mlflow/experiments/{experiment_name}'
+
+    # Create/Get experiment
+    try:
+        experiment = client.create_experiment(experiment_path)
+    except:
+        experiment = client.get_experiment_by_name(experiment_path).experiment_id
+
+    # Create parent run
+    parent_run = client.create_run(experiment_id=experiment)
+    parent_run_id = parent_run.info.run_id
+
+    # Launch pandas UDF
     df.groupBy('pdr').applyInPandas(forecast, result_schema).count()
 
-    # for i in range(1, 30):
-    #     active_runs = mlflow.list_run_infos(
-    #         experiment_id=experiment_id,
-    #         run_view_type=ViewType.ACTIVE_ONLY,
-    #         max_results=1
-    #     )
-    #     if len(active_runs) > 0:
-    #         time.sleep(10)
-    #     else:
-    #         break
-
-    # TODO: Get all active runs and wait till their ends
+    # Wait until all runs finish
+    # TODO: Da gestire un timeout massimo
+    for i in range(1, 30):
+        active_runs = mlflow.list_run_infos(
+            experiment_id=experiment,
+            run_view_type=ViewType.ACTIVE_ONLY,
+            max_results=2
+        )
+        if len(active_runs) > 1:
+            print("still active")
+            time.sleep(10)
+        else:
+            break
 
 
 if __name__ == "__main__":
