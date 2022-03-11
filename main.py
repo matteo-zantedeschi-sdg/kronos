@@ -27,14 +27,14 @@ sql_df = spark.sql("""
     """)
 
 # Define output schema
-result_schema = StructType([
-    StructField('ds', DateType()),
-    StructField('pdr', StringType()),
-    StructField('y', FloatType()),
-    StructField('yhat', FloatType()),
-])
+# result_schema = StructType([
+#     StructField('ds', DateType()),
+#     StructField('pdr', StringType()),
+#     StructField('y', FloatType()),
+#     StructField('yhat', FloatType()),
+# ])
 
 # Apply Model UDF
-df_pred = sql_df.groupby("pdr").applyInPandas(Modeler.forecast, schema=result_schema).withColumn('training_date', current_date())
+# df_pred = sql_df.groupby("pdr").applyInPandas(Modeler.forecast, schema=result_schema).withColumn('training_date', current_date())
 
-print(df_pred.head())
+# print(df_pred.head())

@@ -6,9 +6,8 @@ dependencies:
   - pip
   - pip:
       - pystan==2.19.1.1
-      - click
-      - fbprophet
-      - prophet
-      - pandas
+      - prophet==1.0.1
       - mlflow
-      - pyspark
+      - pyarrow
+      - click
+      - pandas
