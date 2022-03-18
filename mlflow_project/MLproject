@@ -3,22 +3,33 @@ name: Forecast
 conda_env: conda.yaml
 
 entry_points:
-  # train MLflow model
+  # Train/Prediction of a model.
   train:
     parameters:
       data: {type: string, default: ""}
       run_id: {type: string, default: ""}
-    command: "python train.py {data} {run_id}"
+      delta_output_path: {type: string, default: ""}
+      train_fl: {type: bool, default: False}
+      prediction_fl: {type: bool, default: False}
+    command: "python train.py {data} {run_id} {delta_output_path} {train_fl} {prediction_fl}"
 
-  # Forecast on all timeseries.
+  # Parallel launch of mlflow runs.
   forecast:
     parameters:
-      data_path: {type: string, default: ""}
+      input_path: {type: string, default: ""}
+      output_path: {type: string, default: ""}
       experiment_name: {type: string, default: ""}
-    command: "python forecast.py  {data_path} {experiment_name}"
+      train_fl: {type: bool, default: false}
+      prediction_fl: {type: bool, default: false}
+      timeout: {type: int, default: 10800}
+    command: "python forecast.py {input_path} {output_path} {experiment_name} {train_fl} {prediction_fl} {timeout}"
 
   main:
     parameters:
-      data_path: {type: string, default: ""}
+      input_path: {type: string, default: ""}
+      output_path: {type: string, default: ""}
       experiment_name: {type: string, default: ""}
-    command: "python forecast.py {data_path} {experiment_name}"
+      train_fl: {type: bool, default: False}
+      prediction_fl: {type: bool, default: False}
+      timeout: {type: int, default: 10800}
+    command: "python forecast.py {input_path} {output_path} {experiment_name} {train_fl} {prediction_fl} {timeout}"
