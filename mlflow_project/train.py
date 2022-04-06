@@ -2,24 +2,37 @@ from prophet import Prophet
 from mlflow.tracking import MlflowClient
 from mlflow.models.signature import infer_signature
 from mlflow.entities.model_registry.model_version_status import ModelVersionStatus
-from modeler import Modeler
-from ml_flower import MLFlower
-from pyspark.context import SparkContext
-from pyspark.sql.session import SparkSession
+from mlflow.entities.model_registry import ModelVersion
+# from modeler import Modeler
+# from ml_flower import MLFlower
+# from pyspark.context import SparkContext
+# from pyspark.sql.session import SparkSession
+# from pyspark.sql import SparkSession
 import click
 import mlflow
 import mlflow.prophet
+# from mlflow import prophet
 import pandas as pd
 import copy
 import time
 import logging
 import datetime
+import os
 
 
 # TODO: Da inserire gestione eccezioni
 # TODO: Da internalizzare quanto possibile in Modeler e MLFlower
 # TODO: Aggiungere la documentazione
 # TODO: Da definire il log
+# TODO: Inseriamo un modello dummy (può essere anche una ARIMA semplice o ets) per i PDR che hanno troppi pochi dati
+#  per un modello più complesso (check data quality)
+# TODO: Andrà letta la tabella pdr_control_plane
+# TODO: La tabella di forecast avrà anche una colonna che mi indica (per ogni giorno) la distanza della data di quella
+#  previsione dall'ultima osservazione disponibile per quel pdr.
+# TODO: Inserire in modo parametrico una data di riferimento (dt_riferimento) a cui "ancorarsi" per
+#  la previsione: orizzonte temporale, etc
+# TODO: Schema tabella output:
+#  pdr, societa, arera, giorno_gas, volume_giorno_fcst, dt_creazione, dt_riferimento, giorni_da_ultima_osservazione
 
 @click.command(help="Train/Prediction of a model.")
 @click.argument("data")
@@ -30,16 +43,83 @@ import datetime
 def run(data: str = "",
         run_id: str = "",
         delta_output_path: str = "",
-        train_fl: bool = False,
-        prediction_fl: bool = False
+        train_fl: bool = True,
+        prediction_fl: bool = True
         ) -> None:
+
     # Define spark context
-    sc = SparkContext('local')
-    spark = SparkSession(sc)
+    # sc = SparkContext('local')
+    # spark = SparkSession(sc)
+    # spark = SparkSession.builder.config("spark.port.maxRetries", "200").getOrCreate()
+    # spark = SparkSession.builder.appName('forecast-test').getOrCreate()
+    # spark = SparkSession.builder.appName('forecast-test').getOrCreate()
+    print("CIAO")
+
+    client = MlflowClient()
 
     # Suppress warnings (specific to prophet)
-    logger = spark._jvm.org.apache.log4j
-    logging.getLogger("py4j.java_gateway").setLevel(logging.ERROR)
+    # logger = spark._jvm.org.apache.log4j
+    # logging.getLogger("py4j.java_gateway").setLevel(logging.ERROR)
+
+    def train_test_split(data: pd.DataFrame, date_column: str, n_test: int) -> pd.DataFrame and pd.DataFrame:
+        # TODO: Gestire il caso in cui non ci sono sufficienti record per il test
+
+        train_data = data.sort_values(by=[date_column], ascending=False).iloc[n_test:, :]
+        test_data = data.sort_values(by=[date_column], ascending=False).iloc[:n_test, :]
+
+        return train_data, test_data
+
+    def evaluate_model(data: pd.DataFrame, metric: str, predicted_col: str, true_value_col: str) -> int:
+
+        # Transform metric in lower case and remove whitespaces
+        metric = metric.lower().replace(" ", "")
+
+        if metric not in ['rmse']:
+            print(f"Requested metric {metric} is not supported.")
+            print(f"Available metrics are: rmse")
+
+        out = None
+        if metric == 'rmse':
+            out = ((data[true_value_col] - data[predicted_col]) ** 2).mean() ** .5
+
+        return out
+
+    def unit_test_model(model_version: ModelVersion, unit_test_days: int) -> str:
+        # Load the current staging model and test its prediction method
+
+        # Retrieve model flavor tag
+        # model_flavor_tag = model_version.tags['model_flavor']
+
+        # Unit test
+        # if model_flavor_tag == 'prophet':
+        # Retrieve model and make predictions
+        model = mlflow.prophet.load_model(f"models:/{model_version.name}/{model_version.current_stage}")
+        pred_conf = model.make_future_dataframe(periods=unit_test_days, freq='d', include_history=False)
+        pred = model.predict(pred_conf)
+        # else:
+        # print(f"Model flavor {model_flavor_tag} not managed.")
+        # pred = None
+
+        # Check quality
+        out = 'OK' if len(pred) == unit_test_days else 'KO'
+
+        return out
+
+    def deploy_model(model_version: ModelVersion) -> str:
+        # Take the current staging model and promote it to production
+        # Archive the "already in production" model
+        # Return status code
+
+        model_version = client.transition_model_version_stage(
+            name=model_version.name,
+            version=model_version.version,
+            stage='production',
+            archive_existing_versions=True
+        )
+
+        out = 'OK' if model_version.status == 'READY' else 'KO'
+
+        return out
 
     if train_fl:
         try:
@@ -71,7 +151,7 @@ def run(data: str = "",
             renamed_data = renamed_data.rename(columns={date_col: "ds", metric_col: "y"})
 
             # Train/Test split
-            train_data, test_data = Modeler.train_test_split(data=renamed_data, date_column="ds", n_test=n_test)
+            train_data, test_data = train_test_split(data=renamed_data, date_column="ds", n_test=n_test)
 
             # Specify model flavor tag
             mlflow.set_tag(key='model_flavor', value=model_flavor)
@@ -132,18 +212,18 @@ def run(data: str = "",
                 test_prod_pred = test_prod_pred.join(prod_pred, how='left').reset_index(level=0, inplace=True)
 
             # Evaluate trained model
-            train_rmse = Modeler.evaluate_model(data=test_train_pred,
-                                                metric='rmse',
-                                                predicted_col='yhat',
-                                                true_value_col='y')
+            train_rmse = evaluate_model(data=test_train_pred,
+                                        metric='rmse',
+                                        predicted_col='yhat',
+                                        true_value_col='y')
             mlflow.log_metric("rmse", train_rmse)
 
             # Evaluate current production model
             if prod_model_fl:
-                prod_rmse = Modeler.evaluate_model(data=test_prod_pred,
-                                                   metric='rmse',
-                                                   predicted_col='yhat',
-                                                   true_value_col='y')
+                prod_rmse = evaluate_model(data=test_prod_pred,
+                                           metric='rmse',
+                                           predicted_col='yhat',
+                                           true_value_col='y')
 
                 # Competition, combining all metrics
                 # TODO: Now is just rmse, later could be a combination of all metrics
@@ -185,12 +265,12 @@ def run(data: str = "",
                 )
 
                 # Unit test the model
-                unit_test_status = MLFlower().unit_test_model(model_version=model_version,
-                                                              unit_test_days=unit_test_days)
+                unit_test_status = unit_test_model(model_version=model_version,
+                                                   unit_test_days=unit_test_days)
 
                 # Deploy model
                 if unit_test_status == 'OK':
-                    deploy_status = MLFlower().deploy_model(model_version=model_version)
+                    deploy_status = deploy_model(model_version=model_version)
                     print(f"Deployment status: {deploy_status}")
 
         except Exception as e:
@@ -233,11 +313,10 @@ def run(data: str = "",
             pred = pd.DataFrame({'pdr': [pdr_code for i in range(7)], 'ds': pred_dates, 'yhat': pred_values})
 
         # Convert pandas to Spark Dataframe
-        spark_pred = spark.createDataFrame(pred)
+        # spark_pred = spark.createDataFrame(pred)
 
         # Write results in the output delta table
         # spark_pred.write.format("delta").mode("append").save(f"{delta_output_path}")
-        spark_pred.write.format("delta").mode("append").save(f"{delta_output_path}")
 
 
 if __name__ == "__main__":

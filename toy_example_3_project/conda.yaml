@@ -11,6 +11,3 @@ dependencies:
       - pyarrow
       - click
       - pandas
-      - databricks-connect
-      - ipython
-      - databricks-cli

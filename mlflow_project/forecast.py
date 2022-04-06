@@ -2,8 +2,10 @@ from mlflow.tracking import MlflowClient
 from mlflow.utils.mlflow_tags import MLFLOW_PARENT_RUN_ID
 from mlflow.entities import ViewType
 from pyspark.sql.types import StructType, StructField, StringType
-from pyspark.context import SparkContext
-from pyspark.sql.session import SparkSession
+# from pyspark.context import SparkContext
+# from pyspark.sql.session import SparkSession
+from pyspark.sql import SparkSession
+# from pyspark.dbutils import DBUtils
 import click
 import mlflow
 import mlflow.prophet
@@ -11,6 +13,11 @@ import mlflow.projects
 import pandas as pd
 import time
 import re
+
+
+# def get_dbutils(spark):
+#     from pyspark.dbutils import DBUtils
+#     return DBUtils(spark)
 
 
 # TODO: Da definire il log
@@ -48,8 +55,32 @@ def run(input_path: str = "",
     """
 
     # Define spark context
-    sc = SparkContext('local')
-    spark = SparkSession(sc)
+    # sc = SparkContext('local')
+    # spark = SparkSession(sc)
+    spark = SparkSession.builder.appName('forecast-test').getOrCreate()
+
+    # spark = SparkSession.builder\
+    #     .config("spark.databricks.service.client.enabled", "true")\
+    #     .config("spark.databricks.service.port", "8787")\
+    #     .config("spark.databricks.service.address", "https://adb-8955208948899549.9.azuredatabricks.net")\
+    #     .appName('forecast-test')\
+    #     .getOrCreate()
+
+    # spark = SparkSession.builder \
+    #     .config("spark.databricks.service.client.enabled", "true") \
+    #     .config("spark.databricks.service.port", "8787").appName('forecast').getOrCreate()
+    # .config("spark.databricks.service.address", "https://xxx.cloud.databricks.com") \
+    # .config("spark.databricks.service.token", "dapi9246a1f781ba5f5d13991d9d000055d4-2") \
+    # .config("spark.databricks.service.clusterId", "0611-211525-xxxxx") \
+    # Only necessary on consolidated and Azure
+    # .config("spark.databricks.service.orgId", "83127xxxxxxxx")\
+    # Only do this on Azure
+    # .getOrCreate()
+
+    print(spark)
+    # dbutils = DBUtils(spark)
+    # dbutils = get_dbutils(spark)
+    # token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
 
     # Read delta table from path provided
     df = spark.read.format("delta").load(f"{input_path}")
@@ -61,6 +92,13 @@ def run(input_path: str = "",
 
     # Define pandas UDF
     def forecast(data: pd.DataFrame) -> pd.DataFrame:
+        # token = 'dapi9246a1f781ba5f5d13991d9d000055d4-2'
+        # dbutils.fs.put("file:///root/.databrickscfg",
+        #                "[DEFAULT]\nhost=https://community.cloud.databricks.com\ntoken = " + token, overwrite=True)
+
+        # Force to access data
+        pdr_code = data['pdr'].iloc[0]
+        print(pdr_code)
 
         # TODO: Per "foreachPartition" test
         # data = pd.DataFrame(list(data), columns=("pdr", "date", "volume_giorno"))
@@ -113,14 +151,14 @@ def run(input_path: str = "",
     parent_run = client.create_run(experiment_id=experiment)
     parent_run_id = parent_run.info.run_id
 
-    # Launch pandas UDF
+    # Launch pandas UDF (count() just to avoid lazy evaluation)
     # df.foreachPartition(forecast)
     df.groupBy('pdr').applyInPandas(forecast, result_schema).count()
 
     # Wait until all runs finish
     # Note: at least one run (the parent) is always running until all children finish
     sleep_s = 10
-    for i in range(1, int(timeout / sleep_s)):
+    for i in range(1, int(int(timeout) / sleep_s)):
         active_runs = mlflow.list_run_infos(
             experiment_id=experiment,
             run_view_type=ViewType.ACTIVE_ONLY,

@@ -1,0 +1,16 @@
+name: Forecast
+
+conda_env: conda.yaml
+
+entry_points:
+  train:
+    parameters:
+      data: {type: string, default: ""}
+      run_id: {type: string, default: ""}
+    command: "python train.py {data} {run_id}"
+
+  main:
+    parameters:
+      data: {type: string, default: ""}
+      run_id: {type: string, default: ""}
+    command: "python train.py {data} {run_id}"
