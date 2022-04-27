@@ -1,0 +1,5 @@
+dbfs rm dbfs:/mlf_project/conda.yaml; dbfs cp .\mlf_project\conda.yaml dbfs:/mlf_project/;
+dbfs rm dbfs:/mlf_project/train.py; dbfs cp .\mlf_project\train.py dbfs:/mlf_project/;
+dbfs rm dbfs:/mlf_project/ml_flower.py; dbfs cp .\mlf_project\ml_flower.py dbfs:/mlf_project/;
+dbfs rm dbfs:/mlf_project/modeler.py; dbfs cp .\mlf_project\modeler.py dbfs:/mlf_project/;
+dbfs rm dbfs:/mlf_project/MLproject; dbfs cp .\mlf_project\MLproject dbfs:/mlf_project/;
