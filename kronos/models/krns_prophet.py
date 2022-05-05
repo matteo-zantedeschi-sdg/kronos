@@ -15,8 +15,8 @@ class KRNSProphet:
             key_column: str,
             date_col: str,
             metric_col: str,
-            train_data: pd.DataFrame = None,
-            test_data: pd.DataFrame = None,
+            train_data: pd.DataFrame = pd.DataFrame(),
+            test_data: pd.DataFrame = pd.DataFrame(),
             interval_width: float = 0.95,
             growth: str = 'linear',
             daily_seasonality: bool = True,
@@ -56,18 +56,18 @@ class KRNSProphet:
         Get the dataframe into the condition to be processed by the model.
         :return: No return.
         """
-        if self.train_data:
+        if self.train_data.shape[0] > 0:
             self.train_data.rename(columns={self.date_col: "ds", self.metric_col: "y"}, inplace=True)
         else:
             print("No training data")
 
-        if self.test_data:
+        if self.test_data.shape[0] > 0:
             self.test_data.rename(columns={self.date_col: "ds", self.metric_col: "y"}, inplace=True)
         else:
             print("No test data")
 
     def fit(self):
-        if self.train_data:
+        if self.train_data.shape[0] > 0:
             # Define the model
             self.model = Prophet(
                 interval_width=self.interval_width,
