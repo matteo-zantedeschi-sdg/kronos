@@ -1,5 +1,8 @@
-from fbprophet import Prophet
+from prophet import Prophet
 import pandas as pd
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class KRNSProphet:
@@ -9,66 +12,88 @@ class KRNSProphet:
 
     def __init__(
             self,
-            date_column: str,
             key_column: str,
-            metric_column: str,
-            model: Prophet,
-            interval_width=0.95,
-            growth='linear',
-            daily_seasonality=False,
-            weekly_seasonality=True,
-            yearly_seasonality=True,
-            seasonality_mode='multiplicative'
+            date_col: str,
+            metric_col: str,
+            train_data: pd.DataFrame = None,
+            test_data: pd.DataFrame = None,
+            interval_width: float = 0.95,
+            growth: str = 'linear',
+            daily_seasonality: bool = True,
+            weekly_seasonality: bool = True,
+            yearly_seasonality: bool = True,
+            seasonality_mode: str = 'multiplicative',
+            model: Prophet = None,
     ):
-        self.date_column = date_column
         self.key_column = key_column
-        self.metric_column = metric_column
+        self.date_col = date_col
+        self.metric_col = metric_col
+        self.train_data = train_data
+        self.test_data = test_data
+
+        # Model params
+        self.interval_width = interval_width if not model else model.interval_width
+        self.growth = growth if not model else model.growth
+        self.daily_seasonality = daily_seasonality if not model else model.daily_seasonality
+        self.weekly_seasonality = weekly_seasonality if not model else model.weekly_seasonality
+        self.yearly_seasonality = yearly_seasonality if not model else model.yearly_seasonality
+        self.seasonality_mode = seasonality_mode if not model else model.seasonality_mode
+
+        # To load an already configured model
         self.model = model
-        self.interval_width = interval_width
-        self.growth = growth
-        self.daily_seasonality = daily_seasonality
-        self.weekly_seasonality = weekly_seasonality
-        self.yearly_seasonality = yearly_seasonality
-        self.seasonality_mode = seasonality_mode
 
-    def fit(self, data: pd.DataFrame):
-        # Specific preprocessing
-        print("Renaming columns for prophet requirements")
-        data = data.rename(columns={self.date_column: "ds", self.metric_column: "y"})
+        self.model_params = {
+            "interval_width": self.interval_width,
+            "growth": self.growth,
+            "daily_seasonality": self.daily_seasonality,
+            "weekly_seasonality": self.weekly_seasonality,
+            "yearly_seasonality": self.yearly_seasonality,
+            "seasonality_mode": self.seasonality_mode
+        }
 
-        # Define the model
-        self.model = Prophet(
-            interval_width=self.interval_width,
-            growth=self.growth,
-            daily_seasonality=self.daily_seasonality,
-            weekly_seasonality=self.weekly_seasonality,
-            yearly_seasonality=self.yearly_seasonality,
-            seasonality_mode=self.seasonality_mode
-        )
-
-        # Fit the model
-        print("Fitting the model")
-        self.model.fit(data)
-
-    def predict(self, data: pd.DataFrame, periods: int, freq: str, include_history: bool, final_prediction: bool = False) -> pd.DataFrame:
-        # configure predictions
-        print("Configure prediction")
-        pred_conf = self.model.make_future_dataframe(periods=periods, freq=freq, include_history=include_history)
-
-        # make predictions
-        pred = self.model.predict(pred_conf)
-
-        # combine with input data
-        if not final_prediction:
-            pred = pred[['ds', 'yhat']].set_index('ds')
-            data = data.rename(columns={self.date_column: 'ds', self.metric_column: 'y'})
-            data = data[['ds', self.key_column, 'y']].set_index('ds')
-            data = data.join(pred, how='left')
-            data.reset_index(level=0, inplace=True)
-            out = data
+    def preprocess(self):
+        """
+        Get the dataframe into the condition to be processed by the model.
+        :return: No return.
+        """
+        if self.train_data:
+            self.train_data.rename(columns={self.date_col: "ds", self.metric_col: "y"}, inplace=True)
         else:
-            pred = pred[['ds', 'yhat']]
-            pred['pdr'] = data.iloc[0].pdr
-            out = pred
+            print("No training data")
 
-        return out
+        if self.test_data:
+            self.test_data.rename(columns={self.date_col: "ds", self.metric_col: "y"}, inplace=True)
+        else:
+            print("No test data")
+
+    def fit(self):
+        if self.train_data:
+            # Define the model
+            self.model = Prophet(
+                interval_width=self.interval_width,
+                growth=self.growth,
+                daily_seasonality=self.daily_seasonality,
+                weekly_seasonality=self.weekly_seasonality,
+                yearly_seasonality=self.yearly_seasonality,
+                seasonality_mode=self.seasonality_mode
+            )
+
+            # Fit the model
+            self.model.fit(self.train_data)
+
+        else:
+            print("No training data")
+
+    def predict(self, n_days):
+
+        if self.model:
+            # configure predictions
+            pred_config = self.model.make_future_dataframe(periods=n_days, freq='d', include_history=False)
+
+            # make predictions
+            pred = self.model.predict(pred_config)
+
+            return pred
+
+        else:
+            print("Trained model not present")
