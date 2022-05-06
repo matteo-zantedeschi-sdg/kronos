@@ -58,6 +58,9 @@ def forecast_udf_gen(client: MlflowClient,
         weekly_seasonality = True
         yearly_seasonality = True
         seasonality_mode = 'multiplicative'
+        floor = 0
+        cap = 9999999999999
+        country_holidays = 'IT'
 
         # Retrieve key (to later add to the output)
         key_code = str(data[_key_col].iloc[0])
@@ -95,7 +98,10 @@ def forecast_udf_gen(client: MlflowClient,
                     daily_seasonality=daily_seasonality,
                     weekly_seasonality=weekly_seasonality,
                     yearly_seasonality=yearly_seasonality,
-                    seasonality_mode=seasonality_mode
+                    seasonality_mode=seasonality_mode,
+                    floor=floor,
+                    cap=cap,
+                    country_holidays=country_holidays
                 )
 
                 # Preprocess
@@ -134,6 +140,11 @@ def forecast_udf_gen(client: MlflowClient,
                 last_test_date = test_data.sort_values(by='ds', ascending=False, inplace=False).iloc[0]['ds']
                 difference = (last_test_date - last_prod_model_date).days
                 pred_config = prod_model.make_future_dataframe(periods=difference, freq='d', include_history=False)
+
+                # Add floor and cap
+                pred_config['floor'] = floor
+                pred_config['cap'] = cap
+
                 pred = prod_model.predict(pred_config)
 
                 # Compute rmse
@@ -198,6 +209,11 @@ def forecast_udf_gen(client: MlflowClient,
             actual_forecast_horizon = (
                     (datetime.date.today() + datetime.timedelta(days=forecast_horizon)) - last_date).days
             pred_config = model.make_future_dataframe(periods=actual_forecast_horizon, freq='d', include_history=False)
+
+            # Add floor and cap
+            pred_config['floor'] = floor
+            pred_config['cap'] = cap
+
             pred = model.predict(pred_config)
             pred = pred[['ds', 'yhat']]
 
