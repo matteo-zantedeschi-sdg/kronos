@@ -24,8 +24,7 @@ class KRNSProphet:
             yearly_seasonality: bool = True,
             seasonality_mode: str = 'multiplicative',
             floor: int = 0,
-            # TODO: Sarebbe meglio mettere un cap a +Inf
-            cap: int = 9999999999999999999,
+            cap: int = None,
             country_holidays: str = 'IT',
             model: Prophet = None,
     ):
@@ -43,7 +42,7 @@ class KRNSProphet:
         self.yearly_seasonality = yearly_seasonality if not model else model.yearly_seasonality
         self.seasonality_mode = seasonality_mode if not model else model.seasonality_mode
         self.floor = floor
-        self.cap = cap
+        self.cap = cap if cap else train_data[metric_col].max() * 10
         self.country_holidays = country_holidays if not model else model.country_holidays
 
         # To load an already configured model

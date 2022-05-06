@@ -49,6 +49,10 @@ def forecast_udf_gen(client: MlflowClient,
         _dt_creation_col = dt_creation_col
         _dt_reference_col = dt_reference_col
 
+        # Get some statistic
+        min_value = data[metric_col].min()
+        max_value = data[metric_col].max()
+
         # Model parameters
         # TODO: Servirà passare il json
         model_flavor = 'prophet'
@@ -59,7 +63,7 @@ def forecast_udf_gen(client: MlflowClient,
         yearly_seasonality = True
         seasonality_mode = 'multiplicative'
         floor = 0
-        cap = 9999999999999999999
+        cap = max_value * 10
         country_holidays = 'IT'
 
         # Retrieve key (to later add to the output)
@@ -115,8 +119,9 @@ def forecast_udf_gen(client: MlflowClient,
                 krns_prophet.fit()
 
                 # Get the model signature and log the model
-                signature = infer_signature(train_data, krns_prophet.model.predict(train_data))
-                mlflow.prophet.log_model(pr_model=krns_prophet.model, artifact_path='model', signature=signature)
+                # signature = infer_signature(train_data, krns_prophet.predict(n_days=n_test))
+                # TODO: Signature da aggiungere in futuro, e capire quale
+                mlflow.prophet.log_model(pr_model=krns_prophet.model, artifact_path='model')
 
                 # Make predictions
                 pred = krns_prophet.predict(n_days=_n_test)
