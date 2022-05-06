@@ -54,7 +54,7 @@ def forecast_udf_gen(client: MlflowClient,
         model_flavor = 'prophet'
         interval_width = 0.95
         growth = 'logistic'
-        daily_seasonality = True
+        daily_seasonality = False
         weekly_seasonality = True
         yearly_seasonality = True
         seasonality_mode = 'multiplicative'

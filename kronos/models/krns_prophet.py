@@ -19,7 +19,7 @@ class KRNSProphet:
             test_data: pd.DataFrame = pd.DataFrame(),
             interval_width: float = 0.95,
             growth: str = 'linear',
-            daily_seasonality: bool = True,
+            daily_seasonality: bool = False,
             weekly_seasonality: bool = True,
             yearly_seasonality: bool = True,
             seasonality_mode: str = 'multiplicative',
