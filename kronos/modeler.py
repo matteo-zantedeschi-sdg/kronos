@@ -61,7 +61,7 @@ class Modeler:
 
         out = None
         if metric == 'rmse':
-            out = ((actual[actual_col] - pred[pred_col]) ** 2).mean() ** .5
+            out = ((actual[actual_col].values - pred[pred_col].values) ** 2).mean() ** .5
             logger.debug("Evaluation completed.")
 
         return out

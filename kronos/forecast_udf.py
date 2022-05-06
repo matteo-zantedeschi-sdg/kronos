@@ -1,6 +1,5 @@
 from kronos.ml_flower import MLFlower
 from kronos.modeler import Modeler
-from prophet import Prophet
 from kronos.models.krns_prophet import KRNSProphet
 from mlflow.tracking import MlflowClient
 from mlflow.models.signature import infer_signature
@@ -83,8 +82,6 @@ def forecast_udf_gen(client: MlflowClient,
 
                 # Train/Test split
                 train_data, test_data = Modeler.train_test_split(data=data, date_col=_date_col, n_test=_n_test)
-                # TODO: Non dovrebbe essere necessario
-                test_data[_date_col] = test_data[_date_col].astype('datetime64')
 
                 # Init kronos prophet
                 krns_prophet = KRNSProphet(
@@ -133,15 +130,15 @@ def forecast_udf_gen(client: MlflowClient,
 
                 # Predict with current production model (on test set)
                 last_prod_model_date = prod_model.history_dates[0].date()
-                last_test_date = test_data.sort_values(by=_date_col, ascending=False, inplace=False).iloc[0][_date_col]
+                # TODO: Da rendere agnostico da prophet
+                last_test_date = test_data.sort_values(by='ds', ascending=False, inplace=False).iloc[0]['ds']
                 difference = (last_test_date - last_prod_model_date).days
                 pred_config = prod_model.make_future_dataframe(periods=difference, freq='d', include_history=False)
                 pred = prod_model.predict(pred_config)
 
                 # Compute rmse
                 # TODO: Andranno calcolate anche eventuali metriche aggiuntive
-                prod_pred_vs_actual = pd.merge(test_data, pred[['ds', 'yhat']], how='inner', on='ds')
-                prod_rmse = Modeler.evaluate_model(data=prod_pred_vs_actual, metric='rmse', pred_col='yhat',
+                prod_rmse = Modeler.evaluate_model(actual=test_data, pred=pred, metric='rmse', pred_col='yhat',
                                                    actual_col='y')
 
                 # Compute final score and compare
@@ -233,11 +230,11 @@ def forecast_udf_gen(client: MlflowClient,
         pred.rename(columns={"ds": _date_col, "yhat": "volume_giorno_fcst"}, inplace=True)
 
         # Convert to date
-        pred[_date_col] = pred[_date_col].apply(lambda x: x.date() if type(x) == datetime.datetime else x)
+        pred[_date_col] = pred[_date_col].dt.date
 
         # Keep only future rows
         if future_only:
-            pred = pred[pred[_date_col] > _fcst_first_date]
+            pred = pred[pred[_date_col] >= _fcst_first_date]
 
         return pred
 
