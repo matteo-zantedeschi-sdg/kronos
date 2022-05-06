@@ -25,7 +25,7 @@ class KRNSProphet:
             seasonality_mode: str = 'multiplicative',
             floor: int = 0,
             # TODO: Sarebbe meglio mettere un cap a +Inf
-            cap: int = 9999999999999,
+            cap: int = 9999999999999999999,
             country_holidays: str = 'IT',
             model: Prophet = None,
     ):

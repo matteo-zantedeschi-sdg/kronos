@@ -53,13 +53,13 @@ def forecast_udf_gen(client: MlflowClient,
         # TODO: Servirà passare il json
         model_flavor = 'prophet'
         interval_width = 0.95
-        growth = 'linear'
-        daily_seasonality = False
+        growth = 'logistic'
+        daily_seasonality = True
         weekly_seasonality = True
         yearly_seasonality = True
         seasonality_mode = 'multiplicative'
         floor = 0
-        cap = 9999999999999
+        cap = 9999999999999999999
         country_holidays = 'IT'
 
         # Retrieve key (to later add to the output)
