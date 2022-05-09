@@ -40,6 +40,7 @@ def forecast_udf_gen(client: MlflowClient,
         _key_col = key_col
         _date_col = date_col
         _metric_col = metric_col
+        _fcst_col = 'volume_giorno_fcst'
         _days_from_last_obs_col = days_from_last_obs_col
         _current_date = current_date
         _fcst_first_date = fcst_first_date
@@ -49,7 +50,7 @@ def forecast_udf_gen(client: MlflowClient,
         _dt_creation_col = dt_creation_col
         _dt_reference_col = dt_reference_col
 
-        # Get some statistic
+        # Get statistics
         min_value = data[metric_col].min()
         max_value = data[metric_col].max()
 
@@ -195,7 +196,8 @@ def forecast_udf_gen(client: MlflowClient,
                 )
 
                 # Unit test the model
-                unit_test_status = MLFlower.unit_test_model(model_version=model_version, n=_n_unit_test)
+                unit_test_status = MLFlower.unit_test_model(model_version=model_version, n=_n_unit_test, floor=floor,
+                                                            cap=cap)
 
                 # Deploy model in Production
                 if unit_test_status == 'OK':
@@ -222,6 +224,12 @@ def forecast_udf_gen(client: MlflowClient,
             pred = model.predict(pred_config)
             pred = pred[['ds', 'yhat']]
 
+            # Rename from prophet naming
+            pred.rename(columns={"ds": _date_col, "yhat": _fcst_col}, inplace=True)
+
+            # Convert to date
+            pred[_date_col] = pred[_date_col].dt.date
+
         except Exception as e:
             logger.error(f"Prediction failed: {e}")
 
@@ -232,8 +240,8 @@ def forecast_udf_gen(client: MlflowClient,
             actual_forecast_horizon = (
                     (datetime.date.today() + datetime.timedelta(days=forecast_horizon)) - last_date).days
             pred = pd.DataFrame({
-                'ds': [last_date + datetime.timedelta(days=x) for x in range(actual_forecast_horizon)],
-                'yhat': [last_value for i in range(actual_forecast_horizon)]
+                _date_col: [last_date + datetime.timedelta(days=x) for x in range(actual_forecast_horizon)],
+                _fcst_col: [last_value for i in range(actual_forecast_horizon)]
             })
 
         # Compute days from last obs, reference date and prediction date
@@ -246,12 +254,6 @@ def forecast_udf_gen(client: MlflowClient,
 
         # Add key code to predictions
         pred[key_col] = key_code
-
-        # Rename from prophet naming
-        pred.rename(columns={"ds": _date_col, "yhat": "volume_giorno_fcst"}, inplace=True)
-
-        # Convert to date
-        pred[_date_col] = pred[_date_col].dt.date
 
         # Keep only future rows
         if future_only:

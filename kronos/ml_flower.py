@@ -88,11 +88,13 @@ class MLFlower:
         return model
 
     @staticmethod
-    def unit_test_model(model_version: ModelVersion, n: int):
+    def unit_test_model(model_version: ModelVersion, n: int, cap: int, floor: int):
         """
         # TODO: Doc
         :param model_version:
         :param n:
+        :param cap:
+        :param floor:
         :return:
         """
 
@@ -106,8 +108,13 @@ class MLFlower:
         # Retrieve model and make predictions
         # TODO: Da generalizzare rispetto a prophet
         model = mlflow.prophet.load_model(f"models:/{model_version.name}/{model_version.current_stage}")
-        pred_conf = model.make_future_dataframe(periods=n, freq='d', include_history=False)
-        pred = model.predict(pred_conf)
+        pred_config = model.make_future_dataframe(periods=n, freq='d', include_history=False)
+
+        # Add floor and cap
+        pred_config['floor'] = floor
+        pred_config['cap'] = cap
+
+        pred = model.predict(pred_config)
         # else:
         # print(f"Model flavor {model_flavor_tag} not managed.")
         # pred = None
