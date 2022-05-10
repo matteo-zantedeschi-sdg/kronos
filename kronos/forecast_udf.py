@@ -27,7 +27,6 @@ def forecast_udf_gen(client: MlflowClient,
                      dt_creation_col: str,
                      dt_reference_col: str
                      ):
-
     # Define Pandas UDF
     def forecast_udf(data: pd.DataFrame) -> pd.DataFrame:
 
@@ -258,6 +257,10 @@ def forecast_udf_gen(client: MlflowClient,
         # Keep only future rows
         if future_only:
             pred = pred[pred[_date_col] >= _fcst_first_date]
+
+        # Flat predictions to floor value
+        # TODO: Da rivedere/discutere
+        pred[_fcst_col] = pred[_fcst_col].apply(lambda x: x if x >= 0 else floor)
 
         return pred
 
