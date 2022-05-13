@@ -10,6 +10,7 @@ import pandas as pd
 import time
 import datetime
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,10 @@ def forecast_udf_gen(client: MlflowClient,
                      key_col: str,
                      date_col: str,
                      metric_col: str,
+                     quality_col: str,
+                     action_col: str,
+                     models_col: str,
+                     models_config: str,
                      days_from_last_obs_col: str,
                      current_date: datetime.date,
                      fcst_first_date: datetime.date,
@@ -39,6 +44,10 @@ def forecast_udf_gen(client: MlflowClient,
         _key_col = key_col
         _date_col = date_col
         _metric_col = metric_col
+        _quality_col = quality_col
+        _action_col = action_col
+        _models_col = models_col
+        _models_config = json.loads(models_config)
         _fcst_col = 'volume_giorno_fcst'
         _days_from_last_obs_col = days_from_last_obs_col
         _current_date = current_date
@@ -53,159 +62,164 @@ def forecast_udf_gen(client: MlflowClient,
         min_value = data[metric_col].min()
         max_value = data[metric_col].max()
 
-        # Model parameters
-        # TODO: Servirà passare il json
-        model_flavor = 'prophet'
-        interval_width = 0.95
-        growth = 'logistic'
-        daily_seasonality = False
-        weekly_seasonality = True
-        yearly_seasonality = True
-        seasonality_mode = 'multiplicative'
-        floor = 0
+        # Set model parameters
+        # TODO: Sarà da estendere a più di un modello
+        model_flavor = _models_config['prophet_1']['model_flavor']
+        interval_width = _models_config['prophet_1']['interval_width']
+        growth = _models_config['prophet_1']['growth']
+        daily_seasonality = _models_config['prophet_1']['daily_seasonality']
+        weekly_seasonality = _models_config['prophet_1']['weekly_seasonality']
+        yearly_seasonality = _models_config['prophet_1']['yearly_seasonality']
+        seasonality_mode = _models_config['prophet_1']['seasonality_mode']
+        floor = _models_config['prophet_1']['floor']
         cap = max_value * 10
-        country_holidays = 'IT'
+        country_holidays = _models_config['prophet_1']['country_holidays']
 
         # Retrieve key (to later add to the output)
         key_code = str(data[_key_col].iloc[0])
         logger.error(f"####### Working on pdr {key_code}")
 
+        # Retrieve training/predictions parameters
+        action = data[_action_col].iloc[0]
+        quality = data[_quality_col].iloc[0]
+
         # Training #####
-        try:
-
-            # Define experiment path
-            experiment_path = f'/mlflow/experiments/{key_code}'
-            # Create/Get experiment
+        if quality == 'good' and action in ['competition', 'training']:
             try:
-                experiment = client.create_experiment(experiment_path)
+                # Define experiment path
+                experiment_path = f'/mlflow/experiments/{key_code}'
+                # Create/Get experiment
+                try:
+                    experiment = client.create_experiment(experiment_path)
+                except Exception as e:
+                    print(e)
+                    experiment = client.get_experiment_by_name(experiment_path).experiment_id
+
+                # Start run
+                run_name = datetime.datetime.utcnow().isoformat()
+                with mlflow.start_run(experiment_id=experiment, run_name=run_name) as run:
+
+                    # Store run id
+                    run_id = run.info.run_id
+
+                    # Train/Test split
+                    train_data, test_data = Modeler.train_test_split(data=data, date_col=_date_col, n_test=_n_test)
+
+                    # Init kronos prophet
+                    krns_prophet = KRNSProphet(
+                        train_data=train_data,
+                        test_data=test_data,
+                        key_column=_key_col,
+                        date_col=_date_col,
+                        metric_col=_metric_col,
+                        interval_width=interval_width,
+                        growth=growth,
+                        daily_seasonality=daily_seasonality,
+                        weekly_seasonality=weekly_seasonality,
+                        yearly_seasonality=yearly_seasonality,
+                        seasonality_mode=seasonality_mode,
+                        floor=floor,
+                        cap=cap,
+                        country_holidays=country_holidays
+                    )
+
+                    # Preprocess
+                    krns_prophet.preprocess()
+
+                    # Log model params
+                    for key, val in krns_prophet.model_params.items():
+                        client.log_param(run_id, key, val)
+
+                    # Fit the model
+                    krns_prophet.fit()
+
+                    # Get the model signature and log the model
+                    # signature = infer_signature(train_data, krns_prophet.predict(n_days=n_test))
+                    # TODO: Signature da aggiungere in futuro, e capire quale
+                    mlflow.prophet.log_model(pr_model=krns_prophet.model, artifact_path='model')
+
+                    # Make predictions
+                    pred = krns_prophet.predict(n_days=_n_test)
+
+                    # Compute rmse
+                    # TODO: Andranno calcolate anche eventuali metriche aggiuntive - lette da una tabella parametrica
+                    # TODO: yhat è tipica di prophet, da generalizzare
+                    train_rmse = Modeler.evaluate_model(actual=test_data, pred=pred, metric='rmse', pred_col='yhat',
+                                                        actual_col='y')
+                    client.log_metric(run_id, "rmse", train_rmse)
+
+                # Check if a production model already exist and it is still the best one
+                prod_model_win = False
+                if action == 'competition':
+                    try:
+                        # Retrieve the model
+                        prod_model = mlflow.prophet.load_model(f"models:/{key_code}/Production")
+
+                        # Predict with current production model (on test set)
+                        last_prod_model_date = prod_model.history_dates[0].date()
+                        # TODO: Da rendere agnostico da prophet
+                        last_test_date = test_data.sort_values(by='ds', ascending=False, inplace=False).iloc[0]['ds']
+                        difference = (last_test_date - last_prod_model_date).days
+                        pred_config = prod_model.make_future_dataframe(periods=difference, freq='d', include_history=False)
+
+                        # Add floor and cap
+                        pred_config['floor'] = floor
+                        pred_config['cap'] = cap
+
+                        pred = prod_model.predict(pred_config)
+
+                        # Compute rmse
+                        # TODO: Andranno calcolate anche eventuali metriche aggiuntive
+                        prod_rmse = Modeler.evaluate_model(actual=test_data, pred=pred, metric='rmse', pred_col='yhat',
+                                                           actual_col='y')
+
+                        # Compute final score and compare
+                        # TODO: Dovrà essere la somma di tutte le metriche con cui si vogliono confrontare i modelli
+                        train_score = -train_rmse
+                        prod_score = -prod_rmse
+
+                        # Compare score
+                        if prod_score > train_score:
+                            prod_model_win = True
+                            logger.info("Prod model is still winning.")
+
+                    except Exception as e:
+                        logger.warning(e)
+
+                if not prod_model_win:
+                    # Register the trained model to MLflow Registry
+                    model_details = mlflow.register_model(model_uri=f"runs:/{run_id}/model", name=key_code)
+                    # Check registration Status
+                    for _ in range(10):
+                        model_version_details = client.get_model_version(name=model_details.name,
+                                                                         version=model_details.version)
+                        status = ModelVersionStatus.from_string(model_version_details.status)
+                        if status == ModelVersionStatus.READY:
+                            break
+                        time.sleep(1)
+
+                    # Set the flavor tag
+                    client.set_model_version_tag(name=model_version_details.name, version=model_version_details.version,
+                                                 key='model_flavor', value=model_flavor)
+
+                    # Transition to "staging" stage and archive the last one (if present)
+                    model_version = client.transition_model_version_stage(
+                        name=model_version_details.name,
+                        version=model_version_details.version,
+                        stage='staging',
+                        archive_existing_versions=True
+                    )
+
+                    # Unit test the model
+                    unit_test_status = MLFlower.unit_test_model(model_version=model_version, n=_n_unit_test, floor=floor,
+                                                                cap=cap)
+
+                    # Deploy model in Production
+                    if unit_test_status == 'OK':
+                        deploy_status = MLFlower.deploy_model(client=client, model_version=model_version)
+
             except Exception as e:
-                print(e)
-                experiment = client.get_experiment_by_name(experiment_path).experiment_id
-
-            # Start run
-            run_name = datetime.datetime.utcnow().isoformat()
-            with mlflow.start_run(experiment_id=experiment, run_name=run_name) as run:
-
-                # Store run id
-                run_id = run.info.run_id
-
-                # Train/Test split
-                train_data, test_data = Modeler.train_test_split(data=data, date_col=_date_col, n_test=_n_test)
-
-                # Init kronos prophet
-                krns_prophet = KRNSProphet(
-                    train_data=train_data,
-                    test_data=test_data,
-                    key_column=_key_col,
-                    date_col=_date_col,
-                    metric_col=_metric_col,
-                    interval_width=interval_width,
-                    growth=growth,
-                    daily_seasonality=daily_seasonality,
-                    weekly_seasonality=weekly_seasonality,
-                    yearly_seasonality=yearly_seasonality,
-                    seasonality_mode=seasonality_mode,
-                    floor=floor,
-                    cap=cap,
-                    country_holidays=country_holidays
-                )
-
-                # Preprocess
-                krns_prophet.preprocess()
-
-                # Log model params
-                for key, val in krns_prophet.model_params.items():
-                    client.log_param(run_id, key, val)
-
-                # Fit the model
-                krns_prophet.fit()
-
-                # Get the model signature and log the model
-                # signature = infer_signature(train_data, krns_prophet.predict(n_days=n_test))
-                # TODO: Signature da aggiungere in futuro, e capire quale
-                mlflow.prophet.log_model(pr_model=krns_prophet.model, artifact_path='model')
-
-                # Make predictions
-                pred = krns_prophet.predict(n_days=_n_test)
-
-                # Compute rmse
-                # TODO: Andranno calcolate anche eventuali metriche aggiuntive - lette da una tabella parametrica
-                # TODO: yhat è tipica di prophet, da generalizzare
-                train_rmse = Modeler.evaluate_model(actual=test_data, pred=pred, metric='rmse', pred_col='yhat',
-                                                    actual_col='y')
-                client.log_metric(run_id, "rmse", train_rmse)
-
-            # Check if a production model already exist and it is still the best one
-            prod_model_win = False
-            try:
-                # Retrieve the model
-                prod_model = mlflow.prophet.load_model(f"models:/{key_code}/Production")
-
-                # Predict with current production model (on test set)
-                last_prod_model_date = prod_model.history_dates[0].date()
-                # TODO: Da rendere agnostico da prophet
-                last_test_date = test_data.sort_values(by='ds', ascending=False, inplace=False).iloc[0]['ds']
-                difference = (last_test_date - last_prod_model_date).days
-                pred_config = prod_model.make_future_dataframe(periods=difference, freq='d', include_history=False)
-
-                # Add floor and cap
-                pred_config['floor'] = floor
-                pred_config['cap'] = cap
-
-                pred = prod_model.predict(pred_config)
-
-                # Compute rmse
-                # TODO: Andranno calcolate anche eventuali metriche aggiuntive
-                prod_rmse = Modeler.evaluate_model(actual=test_data, pred=pred, metric='rmse', pred_col='yhat',
-                                                   actual_col='y')
-
-                # Compute final score and compare
-                # TODO: Dovrà essere la somma di tutte le metriche con cui si vogliono confrontare i modelli
-                train_score = -train_rmse
-                prod_score = -prod_rmse
-
-                # Compare score
-                if prod_score > train_score:
-                    prod_model_win = True
-                    logger.info("Prod model is still winning.")
-
-            except Exception as e:
-                logger.warning(e)
-
-            if not prod_model_win:
-                # Register the trained model to MLflow Registry
-                model_details = mlflow.register_model(model_uri=f"runs:/{run_id}/model", name=key_code)
-                # Check registration Status
-                for _ in range(10):
-                    model_version_details = client.get_model_version(name=model_details.name,
-                                                                     version=model_details.version)
-                    status = ModelVersionStatus.from_string(model_version_details.status)
-                    if status == ModelVersionStatus.READY:
-                        break
-                    time.sleep(1)
-
-                # Set the flavor tag
-                client.set_model_version_tag(name=model_version_details.name, version=model_version_details.version,
-                                             key='model_flavor', value=model_flavor)
-
-                # Transition to "staging" stage and archive the last one (if present)
-                model_version = client.transition_model_version_stage(
-                    name=model_version_details.name,
-                    version=model_version_details.version,
-                    stage='staging',
-                    archive_existing_versions=True
-                )
-
-                # Unit test the model
-                unit_test_status = MLFlower.unit_test_model(model_version=model_version, n=_n_unit_test, floor=floor,
-                                                            cap=cap)
-
-                # Deploy model in Production
-                if unit_test_status == 'OK':
-                    deploy_status = MLFlower.deploy_model(client=client, model_version=model_version)
-
-        except Exception as e:
-            logger.error(f"Training failed: {e}")
+                logger.error(f"Training failed: {e}")
 
         # Prediction #####
         try:
