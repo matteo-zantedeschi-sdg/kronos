@@ -72,12 +72,10 @@ def forecast_udf_gen(client: MlflowClient,
         # Training #####
         try:
 
-            # Set tracking uri
-            # TODO: Vorrei toglierlo, in sviluppo non serve metterlo
-            mlflow.set_tracking_uri("file:///mlflow/experiments/")
-
             # Define experiment path
-            experiment_path = f'/mlflow/experiments/{key_code}'
+            # TODO: Vorrei ripristinare questo path
+            # experiment_path = f'/mlflow/experiments/{key_code}'
+            experiment_path = f'/{key_code}'
             # Create/Get experiment
             try:
                 experiment = client.create_experiment(experiment_path)
