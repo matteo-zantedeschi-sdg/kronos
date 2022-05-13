@@ -68,14 +68,13 @@ def forecast_udf_gen(client: MlflowClient,
 
         # Retrieve key (to later add to the output)
         key_code = str(data[_key_col].iloc[0])
+        logger.error(f"####### Working on pdr {key_code}")
 
         # Training #####
         try:
 
             # Define experiment path
-            # TODO: Vorrei ripristinare questo path
-            # experiment_path = f'/mlflow/experiments/{key_code}'
-            experiment_path = f'/{key_code}'
+            experiment_path = f'/mlflow/experiments/{key_code}'
             # Create/Get experiment
             try:
                 experiment = client.create_experiment(experiment_path)
@@ -238,6 +237,7 @@ def forecast_udf_gen(client: MlflowClient,
             # Get last value and date
             last_value = data.sort_values(by=_date_col, ascending=False, inplace=False).iloc[0][_metric_col]
             last_date = data.sort_values(by=_date_col, ascending=False, inplace=False).iloc[0][_date_col]
+
             # Create dummy pred df
             actual_forecast_horizon = (
                     (datetime.date.today() + datetime.timedelta(days=_forecast_horizon)) - last_date).days
