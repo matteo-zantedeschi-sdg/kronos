@@ -213,7 +213,7 @@ def forecast_udf_gen(client: MlflowClient,
             # Predict with current production model: compute actual forecast horizon needed first
             last_date = model.history_dates[0].date()
             actual_forecast_horizon = (
-                    (datetime.date.today() + datetime.timedelta(days=forecast_horizon)) - last_date).days
+                    (datetime.date.today() + datetime.timedelta(days=_forecast_horizon)) - last_date).days
             pred_config = model.make_future_dataframe(periods=actual_forecast_horizon, freq='d', include_history=False)
 
             # Add floor and cap
@@ -237,7 +237,7 @@ def forecast_udf_gen(client: MlflowClient,
             last_date = data.sort_values(by=_date_col, ascending=False, inplace=False).iloc[0][_date_col]
             # Create dummy pred df
             actual_forecast_horizon = (
-                    (datetime.date.today() + datetime.timedelta(days=forecast_horizon)) - last_date).days
+                    (datetime.date.today() + datetime.timedelta(days=_forecast_horizon)) - last_date).days
             pred = pd.DataFrame({
                 _date_col: [last_date + datetime.timedelta(days=x) for x in range(actual_forecast_horizon)],
                 _fcst_col: [last_value for i in range(actual_forecast_horizon)]
