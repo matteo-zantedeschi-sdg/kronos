@@ -18,7 +18,8 @@ Main steps are:
 
 ## 1. Read data
 Here the delta format is used, although recommended in Databricks it is not mandatory.
-```
+
+```python
 df = spark.read.format("delta").load("dbfs:/delta_table")
 ```
 
@@ -32,7 +33,7 @@ The main interactions with the clients are the following:
   3. Resulting models, whether they perform "well enough", are first **registered** in the MLflow model registry and then are taken in the *Staging* area. 
   4. If a *unit test* is passed, they are finally **deployed** in the *production* area.
 
-```
+```python
 from mlflow.tracking import MlflowClient
 
 client = MlflowClient()
@@ -41,7 +42,8 @@ client = MlflowClient()
 ## 3. Define output schema
 Define the schema of the Spark DataFrame containing the output forecast.  
 This is **strictly required** (as is) in order to subsequently apply the pandas User Defined Function.
-```
+
+```python
 from pyspark.sql.types import StructType, StructField, DateType, FloatType, StringType, IntegerType
 
 result_schema = StructType([
@@ -62,14 +64,16 @@ This, in the time series scenario, is a problem since usually a time series data
 For this reason, Catalyst groups several time series together, avoiding their parallel execution on the cluster.
 
 With the subsequent code rows, we are forcing the partition key:
-```
+
+```python
 partition_key = 'id'
 partition_number = df.select(partition_key).distinct().count()
 df = df.repartition(partition_number, partition_key)
 ```
 
 ## 5. Generate pandas User Defined Function
-```
+
+```python
 from kronos.forecast_udf import forecast_udf_gen
 
 forecast_udf = forecast_udf_gen(
@@ -93,6 +97,7 @@ forecast_udf = forecast_udf_gen(
 ```
 
 ## 6. Apply pandas User Defined Function
-```
+
+```python
 df_pred = df.groupby(partition_key).applyInPandas(forecast_udf, schema=result_schema)
 ```
