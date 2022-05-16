@@ -101,3 +101,5 @@ forecast_udf = forecast_udf_gen(
 ```python
 df_pred = df.groupby(partition_key).applyInPandas(forecast_udf, schema=result_schema)
 ```
+
+You got your forecast! Plus, all trainings are tracked in MLflow Tracking and all models have been versioned on MLflow Model Registry.
