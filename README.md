@@ -2,7 +2,19 @@
 Kronos package to manage time-series in Databricks.
 
 This package provides a framework for working with time series in parallel using Spark, and managing ML workflow through MLflow.  
-It is developed and tested in *Databricks 10.4 LTS ML (includes Apache Spark 3.2.1, Scala 2.12)*. 
+It is developed and tested in *Databricks 10.4 LTS ML (includes Apache Spark 3.2.1, Scala 2.12)*.  
+
+Main steps are:
+  1. Creation of MLflow **experiment** (if missing) and **run**.
+  2. **Train/test** split.
+  3. **Define models** to train and log their parameters in MLflow. 
+  4. **Train models** and log them in MLflow. 
+  5. **Predict** with all the models and compute the performance score. Finally log it in MLflow. 
+  6. Retrieve the **current production model** (if present), **predict** and compute the performance score. 
+  7. Find the **winning model** and, if different from the current production model, **register** it in MLflow Model Registry. 
+  8. Take the registered model in the *Staging* are and perform a **unit test**. 
+  9. If unit test succeed **promote** the model to the *Production* area. 
+  10. Retrieve the new current production model and use it to provide the **final forecast**. 
 
 ## 1. Read data
 Here the delta format is used, although recommended in Databricks it is not mandatory.
