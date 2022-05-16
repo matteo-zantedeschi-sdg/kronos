@@ -19,6 +19,7 @@ def forecast_udf_gen(client: MlflowClient,
                      key_col: str,
                      date_col: str,
                      metric_col: str,
+                     fcst_col: str,
                      quality_col: str,
                      action_col: str,
                      models_col: str,
@@ -39,6 +40,7 @@ def forecast_udf_gen(client: MlflowClient,
     :param str key_col: The name of the column indicating the time series key.
     :param str date_col: The name of the column indicating the time dimension.
     :param str metric_col: The name of the column indicating the dimension to forecast.
+    :param str fcst_col: The name of the column indication the forecast.
     :param str quality_col: The name of the column indicating the quality of time series ("bad" or "good") which determines if a statistical or naive model should be trained.
     :param str action_col: The name of the column indicating the action to take for the time series. This could be:
         * "competition": One (or more) models are trained and put in competition with each other and with the one already in production.
@@ -66,6 +68,7 @@ def forecast_udf_gen(client: MlflowClient,
                 key_col='id',
                 date_col='date',
                 metric_col='y',
+                fcst_col='y_hat',
                 quality_col='quality',
                 action_col='action',
                 models_col='models',
@@ -110,11 +113,11 @@ def forecast_udf_gen(client: MlflowClient,
         _key_col = key_col
         _date_col = date_col
         _metric_col = metric_col
+        _fcst_col = fcst_col
         _quality_col = quality_col
         _action_col = action_col
         _models_col = models_col
         _models_config = json.loads(models_config)
-        _fcst_col = 'volume_giorno_fcst'
         _days_from_last_obs_col = days_from_last_obs_col
         _current_date = current_date
         _fcst_first_date = fcst_first_date
