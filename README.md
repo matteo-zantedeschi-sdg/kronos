@@ -1,4 +1,6 @@
 # kronos
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 Kronos package to manage time-series in Databricks.
 
 This package provides a framework for working with time series in parallel using Spark, and managing ML workflow through MLflow.  
@@ -104,4 +106,46 @@ df_pred = df.groupby(partition_key).applyInPandas(forecast_udf, schema=result_sc
 
 You got your forecast! Plus, all trainings are tracked in MLflow Tracking and all models have been versioned on MLflow Model Registry.
 
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+---
+
+# Release management
+
+## Azure
+The required steps to release a new version on Azure DevOps are: 
+
+  1. Update package version in **setup.py** (_consistent with the change made_).
+  2. **Commit** changes.
+  3. Create a **tag** called *release* (_required to trigger the azure release pipeline_).
+  4. **Push** commit and tag.
+
+The new version of the package is now available in the Artifact feed specified in the **azure-pipelines.yaml** file.
+
+---
+
+# Install on Databricks Cluster
+
+## Azure
+The required steps to install kronos on a Databricks cluster are:
+  1. Generate a **Personal Access Token (PAT)** on Azure DevOps, setting at least *read* privilege on *Packaging* section. 
+  This is required to correctly authenticate to the *Artifact feed*. 
+  2. Add the PAT as a **secret** into the KeyVault.
+  3. Add the following as **environment variable** of the Databricks cluster:  
+  ```PYPI_TOKEN={{secrets/YourSecretScopeName/YourSecretName}}```  
+  *(Don’t forget to replace the Secret Scope and Secret names by your own.)*
+  4. Get the **URL** of your private PyPI repository.  
+  You can find it going to: Azure DevOps -> Artifacts -> Connect to feed -> pip -> index-url
+  5. Create **init script** for Databricks clusters, by running in a notebook the following code:
+  ```
+  script = r"""
+  #!/bin/bash
+  if [[ $PYPI_TOKEN ]]; then
+    use $PYPI_TOKEN
+  fi
+  echo $PYPI_TOKEN
+  printf "[global]\n" > /etc/pip.conf
+  printf "extra-index-url =\n" >> /etc/pip.conf
+  printf "\thttps://$PYPI_TOKEN@pkgs.dev.azure.com/organization/DataLab/_packaging/datalabartifacts/pypi/simple/\n" >> /etc/pip.conf
+  """
+  dbutils.fs.put("/databricks/scripts/init-scripts/set-private-pip-repositories.sh", script, True)
+  ```
+6. **Install** the package in your Databricks cluster as a PyPI package. 
