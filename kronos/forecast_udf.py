@@ -15,24 +15,25 @@ import json
 logger = logging.getLogger(__name__)
 
 
-def forecast_udf_gen(client: MlflowClient,
-                     key_col: str,
-                     date_col: str,
-                     metric_col: str,
-                     fcst_col: str,
-                     quality_col: str,
-                     action_col: str,
-                     models_col: str,
-                     models_config: str,
-                     days_from_last_obs_col: str,
-                     current_date: datetime.date,
-                     fcst_first_date: datetime.date,
-                     n_test: int,
-                     n_unit_test: int,
-                     forecast_horizon: int,
-                     dt_creation_col: str,
-                     dt_reference_col: str
-                     ):
+def forecast_udf_gen(
+    client: MlflowClient,
+    key_col: str,
+    date_col: str,
+    metric_col: str,
+    fcst_col: str,
+    quality_col: str,
+    action_col: str,
+    models_col: str,
+    models_config: str,
+    days_from_last_obs_col: str,
+    current_date: datetime.date,
+    fcst_first_date: datetime.date,
+    n_test: int,
+    n_unit_test: int,
+    forecast_horizon: int,
+    dt_creation_col: str,
+    dt_reference_col: str,
+):
     """
     A function used to create a pandas User Defined Function (UDF) with the specified parameters.
 
@@ -133,16 +134,16 @@ def forecast_udf_gen(client: MlflowClient,
 
         # Set model parameters
         # TODO: Sarà da estendere a più di un modello
-        model_flavor = _models_config['prophet_1']['model_flavor']
-        interval_width = _models_config['prophet_1']['interval_width']
-        growth = _models_config['prophet_1']['growth']
-        daily_seasonality = _models_config['prophet_1']['daily_seasonality']
-        weekly_seasonality = _models_config['prophet_1']['weekly_seasonality']
-        yearly_seasonality = _models_config['prophet_1']['yearly_seasonality']
-        seasonality_mode = _models_config['prophet_1']['seasonality_mode']
-        floor = _models_config['prophet_1']['floor']
+        model_flavor = _models_config["prophet_1"]["model_flavor"]
+        interval_width = _models_config["prophet_1"]["interval_width"]
+        growth = _models_config["prophet_1"]["growth"]
+        daily_seasonality = _models_config["prophet_1"]["daily_seasonality"]
+        weekly_seasonality = _models_config["prophet_1"]["weekly_seasonality"]
+        yearly_seasonality = _models_config["prophet_1"]["yearly_seasonality"]
+        seasonality_mode = _models_config["prophet_1"]["seasonality_mode"]
+        floor = _models_config["prophet_1"]["floor"]
         cap = max_value * 10
-        country_holidays = _models_config['prophet_1']['country_holidays']
+        country_holidays = _models_config["prophet_1"]["country_holidays"]
 
         # Retrieve key (to later add to the output)
         key_code = str(data[_key_col].iloc[0])
@@ -153,26 +154,32 @@ def forecast_udf_gen(client: MlflowClient,
         quality = data[_quality_col].iloc[0]
 
         # Training #####
-        if quality == 'good' and action in ['competition', 'training']:
+        if quality == "good" and action in ["competition", "training"]:
             try:
                 # Define experiment path
-                experiment_path = f'/mlflow/experiments/{key_code}'
+                experiment_path = f"/mlflow/experiments/{key_code}"
                 # Create/Get experiment
                 try:
                     experiment = client.create_experiment(experiment_path)
                 except Exception as e:
                     print(e)
-                    experiment = client.get_experiment_by_name(experiment_path).experiment_id
+                    experiment = client.get_experiment_by_name(
+                        experiment_path
+                    ).experiment_id
 
                 # Start run
                 run_name = datetime.datetime.utcnow().isoformat()
-                with mlflow.start_run(experiment_id=experiment, run_name=run_name) as run:
+                with mlflow.start_run(
+                    experiment_id=experiment, run_name=run_name
+                ) as run:
 
                     # Store run id
                     run_id = run.info.run_id
 
                     # Train/Test split
-                    train_data, test_data = Modeler.train_test_split(data=data, date_col=_date_col, n_test=_n_test)
+                    train_data, test_data = Modeler.train_test_split(
+                        data=data, date_col=_date_col, n_test=_n_test
+                    )
 
                     # Init kronos prophet
                     krns_prophet = KRNSProphet(
@@ -189,7 +196,7 @@ def forecast_udf_gen(client: MlflowClient,
                         seasonality_mode=seasonality_mode,
                         floor=floor,
                         cap=cap,
-                        country_holidays=country_holidays
+                        country_holidays=country_holidays,
                     )
 
                     # Preprocess
@@ -205,7 +212,9 @@ def forecast_udf_gen(client: MlflowClient,
                     # Get the model signature and log the model
                     # signature = infer_signature(train_data, krns_prophet.predict(n_days=n_test))
                     # TODO: Signature da aggiungere in futuro, e capire quale
-                    mlflow.prophet.log_model(pr_model=krns_prophet.model, artifact_path='model')
+                    mlflow.prophet.log_model(
+                        pr_model=krns_prophet.model, artifact_path="model"
+                    )
 
                     # Make predictions
                     pred = krns_prophet.predict(n_days=_n_test)
@@ -213,34 +222,50 @@ def forecast_udf_gen(client: MlflowClient,
                     # Compute rmse
                     # TODO: Andranno calcolate anche eventuali metriche aggiuntive - lette da una tabella parametrica
                     # TODO: yhat è tipica di prophet, da generalizzare
-                    train_rmse = Modeler.evaluate_model(actual=test_data, pred=pred, metric='rmse', pred_col='yhat',
-                                                        actual_col='y')
+                    train_rmse = Modeler.evaluate_model(
+                        actual=test_data,
+                        pred=pred,
+                        metric="rmse",
+                        pred_col="yhat",
+                        actual_col="y",
+                    )
                     client.log_metric(run_id, "rmse", train_rmse)
 
                 # Check if a production model already exist and it is still the best one
                 prod_model_win = False
-                if action == 'competition':
+                if action == "competition":
                     try:
                         # Retrieve the model
-                        prod_model = mlflow.prophet.load_model(f"models:/{key_code}/Production")
+                        prod_model = mlflow.prophet.load_model(
+                            f"models:/{key_code}/Production"
+                        )
 
                         # Predict with current production model (on test set)
                         last_prod_model_date = prod_model.history_dates[0].date()
                         # TODO: Da rendere agnostico da prophet
-                        last_test_date = test_data.sort_values(by='ds', ascending=False, inplace=False).iloc[0]['ds']
+                        last_test_date = test_data.sort_values(
+                            by="ds", ascending=False, inplace=False
+                        ).iloc[0]["ds"]
                         difference = (last_test_date - last_prod_model_date).days
-                        pred_config = prod_model.make_future_dataframe(periods=difference, freq='d', include_history=False)
+                        pred_config = prod_model.make_future_dataframe(
+                            periods=difference, freq="d", include_history=False
+                        )
 
                         # Add floor and cap
-                        pred_config['floor'] = floor
-                        pred_config['cap'] = cap
+                        pred_config["floor"] = floor
+                        pred_config["cap"] = cap
 
                         pred = prod_model.predict(pred_config)
 
                         # Compute rmse
                         # TODO: Andranno calcolate anche eventuali metriche aggiuntive
-                        prod_rmse = Modeler.evaluate_model(actual=test_data, pred=pred, metric='rmse', pred_col='yhat',
-                                                           actual_col='y')
+                        prod_rmse = Modeler.evaluate_model(
+                            actual=test_data,
+                            pred=pred,
+                            metric="rmse",
+                            pred_col="yhat",
+                            actual_col="y",
+                        )
 
                         # Compute final score and compare
                         # TODO: Dovrà essere la somma di tutte le metriche con cui si vogliono confrontare i modelli
@@ -257,35 +282,50 @@ def forecast_udf_gen(client: MlflowClient,
 
                 if not prod_model_win:
                     # Register the trained model to MLflow Registry
-                    model_details = mlflow.register_model(model_uri=f"runs:/{run_id}/model", name=key_code)
+                    model_details = mlflow.register_model(
+                        model_uri=f"runs:/{run_id}/model", name=key_code
+                    )
                     # Check registration Status
                     for _ in range(10):
-                        model_version_details = client.get_model_version(name=model_details.name,
-                                                                         version=model_details.version)
-                        status = ModelVersionStatus.from_string(model_version_details.status)
+                        model_version_details = client.get_model_version(
+                            name=model_details.name, version=model_details.version
+                        )
+                        status = ModelVersionStatus.from_string(
+                            model_version_details.status
+                        )
                         if status == ModelVersionStatus.READY:
                             break
                         time.sleep(1)
 
                     # Set the flavor tag
-                    client.set_model_version_tag(name=model_version_details.name, version=model_version_details.version,
-                                                 key='model_flavor', value=model_flavor)
+                    client.set_model_version_tag(
+                        name=model_version_details.name,
+                        version=model_version_details.version,
+                        key="model_flavor",
+                        value=model_flavor,
+                    )
 
                     # Transition to "staging" stage and archive the last one (if present)
                     model_version = client.transition_model_version_stage(
                         name=model_version_details.name,
                         version=model_version_details.version,
-                        stage='staging',
-                        archive_existing_versions=True
+                        stage="staging",
+                        archive_existing_versions=True,
                     )
 
                     # Unit test the model
-                    unit_test_status = MLFlower.unit_test_model(model_version=model_version, n=_n_unit_test, floor=floor,
-                                                                cap=cap)
+                    unit_test_status = MLFlower.unit_test_model(
+                        model_version=model_version,
+                        n=_n_unit_test,
+                        floor=floor,
+                        cap=cap,
+                    )
 
                     # Deploy model in Production
-                    if unit_test_status == 'OK':
-                        deploy_status = MLFlower.deploy_model(client=client, model_version=model_version)
+                    if unit_test_status == "OK":
+                        deploy_status = MLFlower.deploy_model(
+                            client=client, model_version=model_version
+                        )
 
             except Exception as e:
                 logger.error(f"Training failed: {e}")
@@ -298,15 +338,19 @@ def forecast_udf_gen(client: MlflowClient,
             # Predict with current production model: compute actual forecast horizon needed first
             last_date = model.history_dates[0].date()
             actual_forecast_horizon = (
-                    (datetime.date.today() + datetime.timedelta(days=_forecast_horizon)) - last_date).days
-            pred_config = model.make_future_dataframe(periods=actual_forecast_horizon, freq='d', include_history=False)
+                (datetime.date.today() + datetime.timedelta(days=_forecast_horizon))
+                - last_date
+            ).days
+            pred_config = model.make_future_dataframe(
+                periods=actual_forecast_horizon, freq="d", include_history=False
+            )
 
             # Add floor and cap
-            pred_config['floor'] = floor
-            pred_config['cap'] = cap
+            pred_config["floor"] = floor
+            pred_config["cap"] = cap
 
             pred = model.predict(pred_config)
-            pred = pred[['ds', 'yhat']]
+            pred = pred[["ds", "yhat"]]
 
             # Rename from prophet naming
             pred.rename(columns={"ds": _date_col, "yhat": _fcst_col}, inplace=True)
@@ -318,19 +362,32 @@ def forecast_udf_gen(client: MlflowClient,
             logger.error(f"Prediction failed: {e}")
 
             # Get last value and date
-            last_value = data.sort_values(by=_date_col, ascending=False, inplace=False).iloc[0][_metric_col]
-            last_date = data.sort_values(by=_date_col, ascending=False, inplace=False).iloc[0][_date_col]
+            last_value = data.sort_values(
+                by=_date_col, ascending=False, inplace=False
+            ).iloc[0][_metric_col]
+            last_date = data.sort_values(
+                by=_date_col, ascending=False, inplace=False
+            ).iloc[0][_date_col]
 
             # Create dummy pred df
             actual_forecast_horizon = (
-                    (datetime.date.today() + datetime.timedelta(days=_forecast_horizon)) - last_date).days
-            pred = pd.DataFrame({
-                _date_col: [last_date + datetime.timedelta(days=x) for x in range(actual_forecast_horizon)],
-                _fcst_col: [last_value for i in range(actual_forecast_horizon)]
-            })
+                (datetime.date.today() + datetime.timedelta(days=_forecast_horizon))
+                - last_date
+            ).days
+            pred = pd.DataFrame(
+                {
+                    _date_col: [
+                        last_date + datetime.timedelta(days=x)
+                        for x in range(actual_forecast_horizon)
+                    ],
+                    _fcst_col: [last_value for i in range(actual_forecast_horizon)],
+                }
+            )
 
         # Compute days from last obs, reference date and prediction date
-        last_date = data.sort_values(by=_date_col, ascending=False, inplace=False).iloc[0][_date_col]
+        last_date = data.sort_values(by=_date_col, ascending=False, inplace=False).iloc[
+            0
+        ][_date_col]
         days_from_last_obs = (datetime.date.today() - last_date).days
         # Add to predictions
         pred[days_from_last_obs_col] = days_from_last_obs

@@ -103,3 +103,5 @@ df_pred = df.groupby(partition_key).applyInPandas(forecast_udf, schema=result_sc
 ```
 
 You got your forecast! Plus, all trainings are tracked in MLflow Tracking and all models have been versioned on MLflow Model Registry.
+
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
