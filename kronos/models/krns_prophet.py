@@ -1,6 +1,8 @@
 from prophet import Prophet
+from mlflow.tracking import MlflowClient
 import pandas as pd
 import logging
+import mlflow
 
 logger = logging.getLogger(__name__)
 
@@ -75,23 +77,52 @@ class KRNSProphet:
         Get the dataframe into the condition to be processed by the model.
         :return: No return.
         """
-        if self.train_data.shape[0] > 0:
+
+        try:
             self.train_data.rename(
                 columns={self.date_col: "ds", self.metric_col: "y"}, inplace=True
             )
+        except Exception as e:
+            logger.warning(
+                f"### Preprocess train data failed: {e} - {self.train_data.head(1)}"
+            )
 
-        else:
-            print("No training data")
-
-        if self.test_data.shape[0] > 0:
+        try:
             self.test_data.rename(
                 columns={self.date_col: "ds", self.metric_col: "y"}, inplace=True
             )
-        else:
-            print("No test data")
+        except Exception as e:
+            logger.warning(
+                f"### Preprocess test data failed: {e} - {self.test_data.head(1)}"
+            )
+
+    def log_params(self, client: MlflowClient, run_id: str):
+        """
+        # TODO: Doc
+        """
+        try:
+            for key, val in self.model_params.items():
+                client.log_param(run_id, key, val)
+        except Exception as e:
+            logger.error(f"### Log params {self.model_params} failed: {e}")
+
+    def log_model(self, artifact_path: str):
+        """
+        TODO: Doc
+        """
+        try:
+            # Get the model signature and log the model
+            # signature = infer_signature(train_data, krns_prophet.predict(n_days=n_test))
+            # TODO: Signature da aggiungere in futuro, e capire quale
+            mlflow.prophet.log_model(pr_model=self.model, artifact_path=artifact_path)
+            logger.info(f"### Model logged: {self.model}")
+
+        except Exception as e:
+            logger.error(f"### Log model {self.model} failed: {e}")
 
     def fit(self):
-        if self.train_data.shape[0] > 0:
+
+        try:
             # Define the model
             self.model = Prophet(
                 interval_width=self.interval_width,
@@ -115,12 +146,14 @@ class KRNSProphet:
             # Remove floor and cap
             self.train_data.drop(["floor", "cap"], axis=1, inplace=True)
 
-        else:
-            print("No training data")
+        except Exception as e:
+            logger.error(
+                f"### Fit with model {self.model} failed: {e} - on data {self.train_data.head(1)}"
+            )
 
     def predict(self, n_days):
 
-        if self.model:
+        try:
             # configure predictions
             pred_config = self.model.make_future_dataframe(
                 periods=n_days, freq="d", include_history=False
@@ -135,5 +168,5 @@ class KRNSProphet:
 
             return pred
 
-        else:
-            print("Trained model not present")
+        except Exception as e:
+            logger.error(f"### Predict with model {self.model} failed: {e}")
