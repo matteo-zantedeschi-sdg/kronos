@@ -140,7 +140,7 @@ def forecast_udf_gen(
             modeler.training()
 
             prod_model_win = False
-            modeler.prod_model_predict()
+            modeler.prod_model_eval()
 
             if action == "competition":
                 modeler.competition()

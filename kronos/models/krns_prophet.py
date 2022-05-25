@@ -172,10 +172,10 @@ class KRNSProphet:
             pred = self.model.predict(pred_config)
 
             # Convert datetime to date
-            pred['ds'] = pred['ds'].dt.date
+            pred["ds"] = pred["ds"].dt.date
 
             # Keep only relevant period
-            pred = pred[pred['ds'] >= fcst_first_date]
+            pred = pred[pred["ds"] >= fcst_first_date]
 
             return pred
 

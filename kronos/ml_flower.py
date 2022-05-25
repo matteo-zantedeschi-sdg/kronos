@@ -43,14 +43,17 @@ class MLFlower:
             loader_module = pyfunc_model.metadata.flavors.get("python_function").get(
                 "loader_module"
             )
+            flavor = loader_module.split(".")[-1]
 
             # TODO: To add all the supported model classes
             if loader_module == "mlflow.prophet":
                 model = mlflow.prophet.load_model(model_uri)
+            elif loader_module == "mlflow.pmdarima":
+                model = mlflow.pmdarima.load_model(model_uri)
             else:
                 raise Exception("Model flavor not supported")
 
-            return model
+            return model, flavor
 
         except Exception as e:
             logger.error(f"### Model loading failed: {e}")
@@ -121,7 +124,7 @@ class MLFlower:
         )
 
         # TODO: Da generalizzare rispetto a prophet
-        model = self.load_model(
+        model, flavor = self.load_model(
             model_uri=f"models:/{model_version.name}/{model_version.current_stage}"
         )
 

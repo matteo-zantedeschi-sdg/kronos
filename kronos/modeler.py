@@ -15,27 +15,29 @@ class Modeler:
     """
 
     def __init__(
-            self,
-            ml_flower: MLFlower,
-            data: pd.DataFrame,
-            key_col: str,
-            date_col: str,
-            metric_col: str,
-            fcst_col: str,
-            models_config: dict,
-            days_from_last_obs_col: str,
-            current_date: datetime.date,
-            fcst_first_date: datetime.date,
-            n_test: int,
-            n_unit_test: int,
-            forecast_horizon: int,
-            dt_creation_col: str,
-            dt_reference_col: str,
-            future_only: True,
+        self,
+        ml_flower: MLFlower,
+        data: pd.DataFrame,
+        key_col: str,
+        date_col: str,
+        metric_col: str,
+        fcst_col: str,
+        models_config: dict,
+        days_from_last_obs_col: str,
+        current_date: datetime.date,
+        fcst_first_date: datetime.date,
+        n_test: int,
+        n_unit_test: int,
+        forecast_horizon: int,
+        dt_creation_col: str,
+        dt_reference_col: str,
+        future_only: True,
     ):
         """
         TODO: Doc
         """
+
+        # Input attributes
         self.ml_flower = ml_flower
         self.data = data
         self.key_col = key_col
@@ -53,65 +55,56 @@ class Modeler:
         self.dt_reference_col = dt_reference_col
         self.future_only = future_only
 
+        # Defined attributes
         self.key_code = str(self.data[self.key_col].iloc[0])
         self.max_value = self.data[self.metric_col].max()
 
+        # Empty attributes
         self.run_id = ""
         self.train_data = pd.DataFrame()
         self.test_data = pd.DataFrame()
         # TODO: Deve essere basato sulle metriche specificate dall'utente
         self.df_performances = pd.DataFrame(
-            columns=["model_name", "rmse", "model_config"]
+            columns=["model_name", "rmse", "model_config", "model"]
         ).set_index("model_name")
         self.winning_model = ""
-        self.models = []
 
     @staticmethod
-    def evaluate_model(
-            actual: pd.DataFrame,
-            pred: pd.DataFrame,
-            metric: str,
-            pred_col: str,
-            actual_col: str,
-    ):
+    def evaluate_model(actual: np.ndarray, pred: np.ndarray, metrics: list):
         """
         # TODO: Doc
         :param actual:
         :param pred:
-        :param metric:
-        :param actual_col:
-        :param pred_col:
+        :param metrics:
         :return:
         """
-        # TODO: Il metodo va trasformato, non deve più prendere in input dei dataframe ma degli array.
-        #  Inoltre vorrei che possa prendere in input una sola metrica come anche una lista di metriche,
-        #  e calcolare di conseguenza e restituire o un solo valore o un dizionario di valori
-
-        logger.debug(f"### Performing evaluation using {metric} metric.")
 
         supported_metrics = ["rmse", "mape"]
+        out = {}
 
-        # Transform metric in lower case and remove whitespaces
-        metric = metric.lower().replace(" ", "")
+        for metric in metrics:
 
-        if metric not in supported_metrics:
-            logger.error(
-                f"### Requested metric {metric} is not supported. Available metrics are: {supported_metrics}"
-            )
+            logger.debug(f"### Performing evaluation using {metric} metric.")
 
-        out = None
-        if metric == "rmse":
-            out = (
-                          (actual[actual_col].values - pred[pred_col].values) ** 2
-                  ).mean() ** 0.5
-            logger.debug(f"### Evaluation on {metric} completed.")
-        elif metric == "mape":
-            out = (
-                      np.abs(
-                          (actual[actual_col].values - pred[pred_col].values)
-                          / actual[actual_col].values
-                      )
-                  ).mean() * 100
+            # Transform metric in lower case and remove whitespaces
+            metric = metric.lower().replace(" ", "")
+
+            if metric not in supported_metrics:
+                logger.error(
+                    f"### Requested metric {metric} is not supported. Available metrics are: {supported_metrics}"
+                )
+            else:
+                if metric == "rmse":
+                    value = ((actual - pred) ** 2).mean() ** 0.5
+                elif metric == "mape":
+                    value = (np.abs((actual - pred) / actual)).mean() * 100
+                else:
+                    value = np.Inf
+
+                out[metric] = value
+                logger.debug(
+                    f"### Evaluation on {metric} completed with value {value}."
+                )
 
         return out
 
@@ -133,7 +126,7 @@ class Modeler:
         else:
             self.train_data = self.data.sort_values(
                 by=[self.date_col], ascending=False
-            ).iloc[self.n_test:, :]
+            ).iloc[self.n_test :, :]
             self.test_data = self.data.sort_values(
                 by=[self.date_col], ascending=False
             ).iloc[: self.n_test, :]
@@ -149,78 +142,80 @@ class Modeler:
             experiment_path = f"/mlflow/experiments/{self.key_code}"
             self.ml_flower.get_experiment(experiment_path=experiment_path)
 
-            # Start run
-            run_name = datetime.datetime.utcnow().isoformat()
-            run = self.ml_flower.start_run(run_name=run_name)
-
-            # Store run id
-            self.run_id = run.info.run_id
-
             # Train/Test split
             self.train_test_split()
 
             # Init all models
-            self.models_generation()
+            models = self.create_all_models(models_config=self.models_config)
 
-            for model in self.models:
-                # Preprocess
-                model.preprocess()
+            for model_name, model in models.items():
+                try:
+                    # Start run
+                    run_name = datetime.datetime.utcnow().isoformat()
+                    run = self.ml_flower.start_run(run_name=run_name)
 
-                # Log model params
-                model.log_params(client=self.ml_flower.client, run_id=self.run_id)
+                    # Store run id
+                    self.run_id = run.info.run_id
 
-                # Fit the model
-                model.fit()
+                    # Preprocess
+                    model.preprocess()
 
-                # Log the model
-                model.log_model(artifact_path="model")
+                    # Log model params
+                    model.log_params(client=self.ml_flower.client, run_id=self.run_id)
 
-                # Make predictions
-                test_data_first_date = self.test_data[self.date_col].sort_values(ascending=True)[0]
-                pred = model.predict(n_days=self.n_test, fcst_first_date=test_data_first_date)
+                    # Fit the model
+                    model.fit()
 
-                # TODO: Competition implementata fino a qui !!!!!!!!!!
-                # Compute rmse and mape
-                # TODO: Andranno calcolate anche eventuali metriche aggiuntive - lette da una tabella parametrica
-                # TODO: yhat è tipica di prophet, da generalizzare
-                train_rmse = self.evaluate_model(
-                    actual=self.test_data,
-                    pred=pred,
-                    metric="rmse",
-                    pred_col="yhat",
-                    actual_col="y",
-                )
-                train_mape = self.evaluate_model(
-                    actual=self.test_data,
-                    pred=pred,
-                    metric="mape",
-                    pred_col="yhat",
-                    actual_col="y",
-                )
-                # TODO: All'interno di questo df ci dovranno essere n metriche di confronto (definite tramite cockpit dall'utente).
-                #  Il dataframe a questo punto potrebbe essere generato da un dizionario dinamico con le n metriche.
-                self.df_performances.loc["prophet_1"] = [
-                    train_rmse,
-                    self.models_config["prophet_1"],
-                ]
-                # TODO: Forse da internalizzare a MLFlower
-                self.ml_flower.client.log_metric(self.run_id, "rmse", train_rmse)
-                self.ml_flower.client.log_metric(self.run_id, "mape", train_mape)
+                    # Log the model
+                    model.log_model(artifact_path="model")
 
-                self.ml_flower.end_run()
+                    # Make predictions
+                    test_data_first_date = self.test_data[self.date_col].sort_values(
+                        ascending=True
+                    )[0]
+                    pred = model.predict(
+                        n_days=self.n_test, fcst_first_date=test_data_first_date
+                    )
+
+                    # Compute rmse and mape
+                    # TODO: Andranno calcolate anche eventuali metriche aggiuntive - lette da una tabella parametrica
+                    # TODO: yhat è tipica di prophet o dei nostri krns models, da generalizzare o da inserire come parametro nei krns models
+                    train_evals = self.evaluate_model(
+                        actual=self.test_data[self.metric_col].values,
+                        pred=pred["yhat"].values,
+                        metrics=["rmse", "mape"],
+                    )
+
+                    # TODO: All'interno di questo df ci dovranno essere n metriche di confronto (definite tramite cockpit dall'utente).
+                    #  Il dataframe a questo punto potrebbe essere generato da un dizionario dinamico con le n metriche.
+                    self.df_performances.loc[model_name] = [
+                        train_evals["rmse"],
+                        self.models_config[model_name],
+                        model,
+                    ]
+
+                    # TODO: Forse da internalizzare a MLFlower
+                    for key, val in train_evals.items():
+                        self.ml_flower.client.log_metric(self.run_id, key, val)
+
+                    self.ml_flower.end_run()
+
+                except Exception as e:
+                    logger.error(f"### Model {model_name} training failed: {e}")
+                    self.ml_flower.end_run()
 
         except Exception as e:
             logger.error(f"### Training failed: {e}")
-            self.ml_flower.end_run()
 
-    def prod_model_predict(self):
+    def prod_model_eval(self):
         """
         TODO: Doc
         """
 
+        # TODO: Da trasformare inizializzando un model krns prophet o quello che è
         try:
             # Retrieve the model
-            prod_model = self.ml_flower.load_model(
+            prod_model, flavor = self.ml_flower.load_model(
                 model_uri=f"models:/{self.key_code}/Production"
             )
 
@@ -244,13 +239,11 @@ class Modeler:
             # Compute rmse
             # TODO: Andranno calcolate anche eventuali metriche aggiuntive
             prod_rmse = self.evaluate_model(
-                actual=self.test_data,
-                pred=pred,
-                metric="rmse",
-                pred_col="yhat",
-                actual_col="y",
+                actual=self.test_data[self.metric_col].values,
+                pred=pred["yhat"].values,
+                metrics=["rmse"],
             )
-            self.df_performances.loc["prod_model"] = [prod_rmse, {}]
+            self.df_performances.loc["prod_model"] = [prod_rmse["rmse"], {}, prod_model]
 
         except Exception as e:
             logger.warning(f"### Prod model prediction failed: {e}")
@@ -296,15 +289,15 @@ class Modeler:
 
         try:
             # Retrieve production model
-            model = self.ml_flower.load_model(
+            model, flavor = self.ml_flower.load_model(
                 model_uri=f"models:/{self.key_code}/Production"
             )
 
             # Predict with current production model: compute actual forecast horizon needed first
             last_date = model.history_dates[0].date()
             actual_forecast_horizon = (
-                    (datetime.date.today() + datetime.timedelta(days=self.forecast_horizon))
-                    - last_date
+                (datetime.date.today() + datetime.timedelta(days=self.forecast_horizon))
+                - last_date
             ).days
             pred_config = model.make_future_dataframe(
                 periods=actual_forecast_horizon, freq="d", include_history=False
@@ -340,8 +333,8 @@ class Modeler:
 
             # Create dummy pred df
             actual_forecast_horizon = (
-                    (datetime.date.today() + datetime.timedelta(days=self.forecast_horizon))
-                    - last_date
+                (datetime.date.today() + datetime.timedelta(days=self.forecast_horizon))
+                - last_date
             ).days
             pred = pd.DataFrame(
                 {
@@ -382,43 +375,58 @@ class Modeler:
 
         return pred
 
-    def models_generation(self):
+    def create_all_models(self, models_config: dict):
         """
         # TODO: Doc
         :return:
         """
 
         # For each model config create its instance
-        for key, val in self.models_config.items():
-            if key.split('_')[0] == 'prophet':
-                model = KRNSProphet(
-                    train_data=self.train_data,
-                    test_data=self.test_data,
-                    key_column=self.key_col,
-                    date_col=self.date_col,
-                    metric_col=self.metric_col,
-                    interval_width=val["interval_width"],
-                    growth=val["growth"],
-                    daily_seasonality=val["daily_seasonality"],
-                    weekly_seasonality=val["weekly_seasonality"],
-                    yearly_seasonality=val["yearly_seasonality"],
-                    seasonality_mode=val["seasonality_mode"],
-                    floor=val["floor"],
-                    cap=self.max_value,
-                    country_holidays=val["country_holidays"],
-                )
-            elif key.split('_')[0] == 'pmdarima':
-                model = KRNSPmdarima(
-                    train_data=self.train_data,
-                    test_data=self.test_data,
-                    key_column=self.key_col,
-                    date_col=self.date_col,
-                    metric_col=self.metric_col,
-                    m=val['m'],
-                    seasonal=val['seasonal']
-                )
-            else:
-                raise ValueError(f"Model {key} not supported.")
-
+        models = {}
+        for model_name, model_config in models_config.items():
+            model_flavor = model_name.split("_")[0]
+            model = self.model_generation(
+                model_flavor=model_flavor, model_config=model_config
+            )
             # Add model to the model list
-            self.models.append(model)
+            models[model_name] = model
+        return models
+
+    def model_generation(self, model_flavor: str, model_config: dict):
+        """
+        # TODO: DOC
+        :param model_flavor:
+        :param model_config:
+        :return:
+        """
+        if model_flavor == "prophet":
+            model = KRNSProphet(
+                train_data=self.train_data,
+                test_data=self.test_data,
+                key_column=self.key_col,
+                date_col=self.date_col,
+                metric_col=self.metric_col,
+                interval_width=model_config["interval_width"],
+                growth=model_config["growth"],
+                daily_seasonality=model_config["daily_seasonality"],
+                weekly_seasonality=model_config["weekly_seasonality"],
+                yearly_seasonality=model_config["yearly_seasonality"],
+                seasonality_mode=model_config["seasonality_mode"],
+                floor=model_config["floor"],
+                cap=self.max_value,
+                country_holidays=model_config["country_holidays"],
+            )
+        elif model_flavor == "pmdarima":
+            model = KRNSPmdarima(
+                train_data=self.train_data,
+                test_data=self.test_data,
+                key_column=self.key_col,
+                date_col=self.date_col,
+                metric_col=self.metric_col,
+                m=model_config["m"],
+                seasonal=model_config["seasonal"],
+            )
+        else:
+            raise ValueError(f"Model {model_flavor} not supported.")
+
+        return model

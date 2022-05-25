@@ -12,16 +12,18 @@ class KRNSPmdarima:
     """
     # TODO: Doc
     """
-    def __init__(self,
-                 key_column: str,
-                 date_col: str,
-                 metric_col: str,
-                 train_data: pd.DataFrame = pd.DataFrame(),
-                 test_data: pd.DataFrame = pd.DataFrame(),
-                 model: pm.arima.arima.ARIMA = None,
-                 m: int = 7,
-                 seasonal: bool = True
-                 ):
+
+    def __init__(
+        self,
+        key_column: str,
+        date_col: str,
+        metric_col: str,
+        train_data: pd.DataFrame = pd.DataFrame(),
+        test_data: pd.DataFrame = pd.DataFrame(),
+        model: pm.arima.arima.ARIMA = None,
+        m: int = 7,
+        seasonal: bool = True,
+    ):
         self.key_column = key_column
         self.date_col = date_col
         self.metric_col = metric_col
@@ -35,10 +37,7 @@ class KRNSPmdarima:
         # To load an already configured model
         self.model = model
 
-        self.model_params = {
-            "m": self.m,
-            "seasonal": self.seasonal
-        }
+        self.model_params = {"m": self.m, "seasonal": self.seasonal}
 
     def preprocess(self):
         """
@@ -47,7 +46,11 @@ class KRNSPmdarima:
         """
 
         try:
-            self.train_data.drop(self.train_data.columns.difference([self.date_col, self.metric_col]), axis=1, inplace=True)
+            self.train_data.drop(
+                self.train_data.columns.difference([self.date_col, self.metric_col]),
+                axis=1,
+                inplace=True,
+            )
             self.train_data.set_index(self.date_col, inplace=True)
         except Exception as e:
             logger.warning(
@@ -55,7 +58,11 @@ class KRNSPmdarima:
             )
 
         try:
-            self.test_data.drop(self.test_data.columns.difference([self.date_col, self.metric_col]), axis=1, inplace=True)
+            self.test_data.drop(
+                self.test_data.columns.difference([self.date_col, self.metric_col]),
+                axis=1,
+                inplace=True,
+            )
             self.test_data.set_index(self.date_col, inplace=True)
         except Exception as e:
             logger.warning(
@@ -90,7 +97,9 @@ class KRNSPmdarima:
         # TODO: Capire se esiste un modo per dargli un min/max value
         try:
             # Define the model
-            self.model = pm.auto_arima(self.train_data, seasonal=self.seasonal, m=self.m)
+            self.model = pm.auto_arima(
+                self.train_data, seasonal=self.seasonal, m=self.m
+            )
 
         except Exception as e:
             logger.error(
@@ -103,8 +112,11 @@ class KRNSPmdarima:
             # make predictions
             pred = pd.DataFrame(
                 data={
-                    'ds': [fcst_first_date + datetime.timedelta(days=x) for x in range(n_days)],
-                    'yhat': self.model.predict(n_periods=n_days)
+                    "ds": [
+                        fcst_first_date + datetime.timedelta(days=x)
+                        for x in range(n_days)
+                    ],
+                    "yhat": self.model.predict(n_periods=n_days),
                 }
             )
 
@@ -112,5 +124,3 @@ class KRNSPmdarima:
 
         except Exception as e:
             logger.error(f"### Predict with model {self.model} failed: {e}")
-
-
