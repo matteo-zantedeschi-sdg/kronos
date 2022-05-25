@@ -1,5 +1,6 @@
 from kronos.ml_flower import MLFlower
 from kronos.models.krns_prophet import KRNSProphet
+from kronos.models.krns_pmdarima import KRNSPmdarima
 import pandas as pd
 import numpy as np
 import logging
@@ -14,23 +15,23 @@ class Modeler:
     """
 
     def __init__(
-        self,
-        ml_flower: MLFlower,
-        data: pd.DataFrame,
-        key_col: str,
-        date_col: str,
-        metric_col: str,
-        fcst_col: str,
-        models_config: dict,
-        days_from_last_obs_col: str,
-        current_date: datetime.date,
-        fcst_first_date: datetime.date,
-        n_test: int,
-        n_unit_test: int,
-        forecast_horizon: int,
-        dt_creation_col: str,
-        dt_reference_col: str,
-        future_only: True,
+            self,
+            ml_flower: MLFlower,
+            data: pd.DataFrame,
+            key_col: str,
+            date_col: str,
+            metric_col: str,
+            fcst_col: str,
+            models_config: dict,
+            days_from_last_obs_col: str,
+            current_date: datetime.date,
+            fcst_first_date: datetime.date,
+            n_test: int,
+            n_unit_test: int,
+            forecast_horizon: int,
+            dt_creation_col: str,
+            dt_reference_col: str,
+            future_only: True,
     ):
         """
         TODO: Doc
@@ -63,14 +64,15 @@ class Modeler:
             columns=["model_name", "rmse", "model_config"]
         ).set_index("model_name")
         self.winning_model = ""
+        self.models = []
 
     @staticmethod
     def evaluate_model(
-        actual: pd.DataFrame,
-        pred: pd.DataFrame,
-        metric: str,
-        pred_col: str,
-        actual_col: str,
+            actual: pd.DataFrame,
+            pred: pd.DataFrame,
+            metric: str,
+            pred_col: str,
+            actual_col: str,
     ):
         """
         # TODO: Doc
@@ -81,6 +83,9 @@ class Modeler:
         :param pred_col:
         :return:
         """
+        # TODO: Il metodo va trasformato, non deve più prendere in input dei dataframe ma degli array.
+        #  Inoltre vorrei che possa prendere in input una sola metrica come anche una lista di metriche,
+        #  e calcolare di conseguenza e restituire o un solo valore o un dizionario di valori
 
         logger.debug(f"### Performing evaluation using {metric} metric.")
 
@@ -97,16 +102,16 @@ class Modeler:
         out = None
         if metric == "rmse":
             out = (
-                (actual[actual_col].values - pred[pred_col].values) ** 2
-            ).mean() ** 0.5
+                          (actual[actual_col].values - pred[pred_col].values) ** 2
+                  ).mean() ** 0.5
             logger.debug(f"### Evaluation on {metric} completed.")
         elif metric == "mape":
             out = (
-                np.abs(
-                    (actual[actual_col].values - pred[pred_col].values)
-                    / actual[actual_col].values
-                )
-            ).mean() * 100
+                      np.abs(
+                          (actual[actual_col].values - pred[pred_col].values)
+                          / actual[actual_col].values
+                      )
+                  ).mean() * 100
 
         return out
 
@@ -128,7 +133,7 @@ class Modeler:
         else:
             self.train_data = self.data.sort_values(
                 by=[self.date_col], ascending=False
-            ).iloc[self.n_test :, :]
+            ).iloc[self.n_test:, :]
             self.test_data = self.data.sort_values(
                 by=[self.date_col], ascending=False
             ).iloc[: self.n_test, :]
@@ -154,74 +159,55 @@ class Modeler:
             # Train/Test split
             self.train_test_split()
 
-            # Init kronos prophet
-            # TODO: Da generalizzare ad n modelli di diverse classi
-            #  Creare un metodo chiamato Modeler.models_generation() che inizializza tutti i KRNS Models
-            krns_prophet = KRNSProphet(
-                train_data=self.train_data,
-                test_data=self.test_data,
-                key_column=self.key_col,
-                date_col=self.date_col,
-                metric_col=self.metric_col,
-                interval_width=self.models_config["prophet_1"]["interval_width"],
-                growth=self.models_config["prophet_1"]["growth"],
-                daily_seasonality=self.models_config["prophet_1"]["daily_seasonality"],
-                weekly_seasonality=self.models_config["prophet_1"][
-                    "weekly_seasonality"
-                ],
-                yearly_seasonality=self.models_config["prophet_1"][
-                    "yearly_seasonality"
-                ],
-                seasonality_mode=self.models_config["prophet_1"]["seasonality_mode"],
-                floor=self.models_config["prophet_1"]["floor"],
-                cap=self.max_value,
-                country_holidays=self.models_config["prophet_1"]["country_holidays"],
-            )
+            # Init all models
+            self.models_generation()
 
-            # Preprocess
-            krns_prophet.preprocess()
+            for model in self.models:
+                # Preprocess
+                model.preprocess()
 
-            # Log model params
-            krns_prophet.log_params(client=self.ml_flower.client, run_id=self.run_id)
+                # Log model params
+                model.log_params(client=self.ml_flower.client, run_id=self.run_id)
 
-            # Fit the model
-            krns_prophet.fit()
+                # Fit the model
+                model.fit()
 
-            # Log the model
-            krns_prophet.log_model(artifact_path="model")
+                # Log the model
+                model.log_model(artifact_path="model")
 
-            # Make predictions
-            # TODO: Da mettere forecast horizon?
-            pred = krns_prophet.predict(n_days=self.n_test)
+                # Make predictions
+                test_data_first_date = self.test_data[self.date_col].sort_values(ascending=True)[0]
+                pred = model.predict(n_days=self.n_test, fcst_first_date=test_data_first_date)
 
-            # Compute rmse and mape
-            # TODO: Andranno calcolate anche eventuali metriche aggiuntive - lette da una tabella parametrica
-            # TODO: yhat è tipica di prophet, da generalizzare
-            train_rmse = self.evaluate_model(
-                actual=self.test_data,
-                pred=pred,
-                metric="rmse",
-                pred_col="yhat",
-                actual_col="y",
-            )
-            train_mape = self.evaluate_model(
-                actual=self.test_data,
-                pred=pred,
-                metric="mape",
-                pred_col="yhat",
-                actual_col="y",
-            )
-            # TODO: All'interno di questo df ci dovranno essere n metriche di confronto (definite tramite cockpit dall'utente).
-            #  Il dataframe a questo punto potrebbe essere generato da un dizionario dinamico con le n metriche.
-            self.df_performances.loc["prophet_1"] = [
-                train_rmse,
-                self.models_config["prophet_1"],
-            ]
-            # TODO: Forse da internalizzare a MLFlower
-            self.ml_flower.client.log_metric(self.run_id, "rmse", train_rmse)
-            self.ml_flower.client.log_metric(self.run_id, "mape", train_mape)
+                # TODO: Competition implementata fino a qui !!!!!!!!!!
+                # Compute rmse and mape
+                # TODO: Andranno calcolate anche eventuali metriche aggiuntive - lette da una tabella parametrica
+                # TODO: yhat è tipica di prophet, da generalizzare
+                train_rmse = self.evaluate_model(
+                    actual=self.test_data,
+                    pred=pred,
+                    metric="rmse",
+                    pred_col="yhat",
+                    actual_col="y",
+                )
+                train_mape = self.evaluate_model(
+                    actual=self.test_data,
+                    pred=pred,
+                    metric="mape",
+                    pred_col="yhat",
+                    actual_col="y",
+                )
+                # TODO: All'interno di questo df ci dovranno essere n metriche di confronto (definite tramite cockpit dall'utente).
+                #  Il dataframe a questo punto potrebbe essere generato da un dizionario dinamico con le n metriche.
+                self.df_performances.loc["prophet_1"] = [
+                    train_rmse,
+                    self.models_config["prophet_1"],
+                ]
+                # TODO: Forse da internalizzare a MLFlower
+                self.ml_flower.client.log_metric(self.run_id, "rmse", train_rmse)
+                self.ml_flower.client.log_metric(self.run_id, "mape", train_mape)
 
-            self.ml_flower.end_run()
+                self.ml_flower.end_run()
 
         except Exception as e:
             logger.error(f"### Training failed: {e}")
@@ -317,8 +303,8 @@ class Modeler:
             # Predict with current production model: compute actual forecast horizon needed first
             last_date = model.history_dates[0].date()
             actual_forecast_horizon = (
-                (datetime.date.today() + datetime.timedelta(days=self.forecast_horizon))
-                - last_date
+                    (datetime.date.today() + datetime.timedelta(days=self.forecast_horizon))
+                    - last_date
             ).days
             pred_config = model.make_future_dataframe(
                 periods=actual_forecast_horizon, freq="d", include_history=False
@@ -354,8 +340,8 @@ class Modeler:
 
             # Create dummy pred df
             actual_forecast_horizon = (
-                (datetime.date.today() + datetime.timedelta(days=self.forecast_horizon))
-                - last_date
+                    (datetime.date.today() + datetime.timedelta(days=self.forecast_horizon))
+                    - last_date
             ).days
             pred = pd.DataFrame(
                 {
@@ -395,3 +381,44 @@ class Modeler:
         )
 
         return pred
+
+    def models_generation(self):
+        """
+        # TODO: Doc
+        :return:
+        """
+
+        # For each model config create its instance
+        for key, val in self.models_config.items():
+            if key.split('_')[0] == 'prophet':
+                model = KRNSProphet(
+                    train_data=self.train_data,
+                    test_data=self.test_data,
+                    key_column=self.key_col,
+                    date_col=self.date_col,
+                    metric_col=self.metric_col,
+                    interval_width=val["interval_width"],
+                    growth=val["growth"],
+                    daily_seasonality=val["daily_seasonality"],
+                    weekly_seasonality=val["weekly_seasonality"],
+                    yearly_seasonality=val["yearly_seasonality"],
+                    seasonality_mode=val["seasonality_mode"],
+                    floor=val["floor"],
+                    cap=self.max_value,
+                    country_holidays=val["country_holidays"],
+                )
+            elif key.split('_')[0] == 'pmdarima':
+                model = KRNSPmdarima(
+                    train_data=self.train_data,
+                    test_data=self.test_data,
+                    key_column=self.key_col,
+                    date_col=self.date_col,
+                    metric_col=self.metric_col,
+                    m=val['m'],
+                    seasonal=val['seasonal']
+                )
+            else:
+                raise ValueError(f"Model {key} not supported.")
+
+            # Add model to the model list
+            self.models.append(model)

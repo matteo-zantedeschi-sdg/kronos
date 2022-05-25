@@ -3,6 +3,7 @@ from mlflow.tracking import MlflowClient
 import pandas as pd
 import logging
 import mlflow
+import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -151,20 +152,30 @@ class KRNSProphet:
                 f"### Fit with model {self.model} failed: {e} - on data {self.train_data.head(1)}"
             )
 
-    def predict(self, n_days):
+    def predict(self, n_days: int, fcst_first_date: datetime.date):
 
         try:
+            # Compute difference from last date in the model and first date of forecast
+            model_last_date = self.model.history_dates[0].date()
+            difference = (fcst_first_date - model_last_date).days
+
             # configure predictions
             pred_config = self.model.make_future_dataframe(
-                periods=n_days, freq="d", include_history=False
+                periods=difference + n_days - 1, freq="d", include_history=False
             )
 
             # Add floor and cap
             pred_config["floor"] = self.floor
             pred_config["cap"] = self.cap
 
-            # make predictions
+            # Make predictions
             pred = self.model.predict(pred_config)
+
+            # Convert datetime to date
+            pred['ds'] = pred['ds'].dt.date
+
+            # Keep only relevant period
+            pred = pred[pred['ds'] >= fcst_first_date]
 
             return pred
 
