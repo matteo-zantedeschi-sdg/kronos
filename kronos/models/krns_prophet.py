@@ -18,6 +18,7 @@ class KRNSProphet:
         key_column: str,
         date_col: str,
         metric_col: str,
+        fcst_col: str,
         train_data: pd.DataFrame = pd.DataFrame(),
         test_data: pd.DataFrame = pd.DataFrame(),
         interval_width: float = 0.95,
@@ -26,18 +27,20 @@ class KRNSProphet:
         weekly_seasonality: bool = True,
         yearly_seasonality: bool = True,
         seasonality_mode: str = "multiplicative",
-        floor: int = 0,
+        floor: int = None,
         cap: int = None,
         country_holidays: str = "IT",
         model: Prophet = None,
     ):
+        # Kronos attributes
         self.key_column = key_column
         self.date_col = date_col
         self.metric_col = metric_col
+        self.fcst_col = fcst_col
         self.train_data = train_data
         self.test_data = test_data
 
-        # Model params
+        # Model attributes
         self.interval_width = interval_width if not model else model.interval_width
         self.growth = growth if not model else model.growth
         self.daily_seasonality = (
@@ -52,11 +55,22 @@ class KRNSProphet:
         self.seasonality_mode = (
             seasonality_mode if not model else model.seasonality_mode
         )
-        self.floor = floor
-        self.cap = cap if cap else train_data[metric_col].max() * 10
         self.country_holidays = (
             country_holidays if not model else model.country_holidays
         )
+
+        # Floor/Cap
+        if floor:
+            self.floor = floor
+        else:
+            self.floor = train_data[metric_col].min() / 10 if train_data.shape[0] > 0 else 0
+
+        if cap:
+            self.cap = cap
+        else:
+            self.cap = (
+                train_data[metric_col].max() * 10 if train_data.shape[0] > 0 else 1000000000000000000
+            )
 
         # To load an already configured model
         self.model = model
@@ -152,7 +166,9 @@ class KRNSProphet:
                 f"### Fit with model {self.model} failed: {e} - on data {self.train_data.head(1)}"
             )
 
-    def predict(self, n_days: int, fcst_first_date: datetime.date):
+    def predict(
+        self, n_days: int, fcst_first_date: datetime.date = datetime.date.today()
+    ):
 
         try:
             # Compute difference from last date in the model and first date of forecast
@@ -176,6 +192,9 @@ class KRNSProphet:
 
             # Keep only relevant period
             pred = pred[pred["ds"] >= fcst_first_date]
+
+            # Rename columns
+            pred.rename(columns={"ds": self.date_col, "y": self.fcst_col}, inplace=True)
 
             return pred
 

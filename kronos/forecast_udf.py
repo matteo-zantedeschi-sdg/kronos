@@ -24,7 +24,7 @@ def forecast_udf_gen(
     fcst_first_date: datetime.date,
     n_test: int,
     n_unit_test: int,
-    forecast_horizon: int,
+    fcst_horizon: int,
     dt_creation_col: str,
     dt_reference_col: str,
 ):
@@ -48,7 +48,7 @@ def forecast_udf_gen(
     :param datetime.date fcst_first_date: Date of first day of forecast, usually is the day following the current date.
     :param int n_test: Number of observations to use as test set.
     :param int n_unit_test: Number of points to forecast in the model deployment's unit test.
-    :param int forecast_horizon: Number of points to forecast.
+    :param int fcst_horizon: Number of points to forecast.
     :param str dt_creation_col: The name of the column indicating the forecast creation date.
     :param str dt_reference_col: The name of the column indicating the date used as reference date for forecast.
 
@@ -73,7 +73,7 @@ def forecast_udf_gen(
                 fcst_first_date=date.today().strftime('%Y-%m-%d'),
                 n_test=7,
                 n_unit_test=7,
-                forecast_horizon=7,
+                fcst_horizon=7,
                 dt_creation_col='creation_date',
                 dt_reference_col='reference_date'
             )
@@ -102,9 +102,6 @@ def forecast_udf_gen(
 
         """
 
-        # Set parameters
-        future_only = True
-
         # Retrieve key (to later add to the output)
         key_code = str(data[key_col].iloc[0])
         logger.info(f"### Working on pdr {key_code}")
@@ -129,10 +126,9 @@ def forecast_udf_gen(
             fcst_first_date=fcst_first_date,
             n_test=n_test,
             n_unit_test=n_unit_test,
-            forecast_horizon=forecast_horizon,
+            fcst_horizon=fcst_horizon,
             dt_creation_col=dt_creation_col,
             dt_reference_col=dt_reference_col,
-            future_only=future_only,
         )
 
         # TRAINING #####
@@ -144,7 +140,7 @@ def forecast_udf_gen(
 
             if action == "competition":
                 modeler.competition()
-                if modeler.winning_model == "prod_model":
+                if modeler.winning_model_name == "prod_model":
                     prod_model_win = True
                     logger.info("### Prod model is still winning.")
 

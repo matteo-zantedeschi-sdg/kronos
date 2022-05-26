@@ -92,7 +92,7 @@ forecast_udf = forecast_udf_gen(
     fcst_first_date=fcst_first_date, 
     n_test=n_test, 
     n_unit_test=n_unit_test, 
-    forecast_horizon=forecast_horizon,
+    fcst_horizon=fcst_horizon,
     dt_creation_col=dt_creation_col,
     dt_reference_col=dt_reference_col
 )

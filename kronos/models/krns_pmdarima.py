@@ -18,19 +18,22 @@ class KRNSPmdarima:
         key_column: str,
         date_col: str,
         metric_col: str,
+        fcst_col: str,
         train_data: pd.DataFrame = pd.DataFrame(),
         test_data: pd.DataFrame = pd.DataFrame(),
         model: pm.arima.arima.ARIMA = None,
         m: int = 7,
         seasonal: bool = True,
     ):
+        # Kronos attributes
         self.key_column = key_column
         self.date_col = date_col
         self.metric_col = metric_col
+        self.fcst_col = fcst_col
         self.train_data = train_data
         self.test_data = test_data
 
-        # Model params
+        # Model attributes
         self.m = m
         self.seasonal = seasonal
 
@@ -106,17 +109,19 @@ class KRNSPmdarima:
                 f"### Fit with model {self.model} failed: {e} - on data {self.train_data.head(1)}"
             )
 
-    def predict(self, n_days: int, fcst_first_date: datetime.date):
+    def predict(
+        self, n_days: int, fcst_first_date: datetime.date = datetime.date.today()
+    ):
 
         try:
             # make predictions
             pred = pd.DataFrame(
                 data={
-                    "ds": [
+                    self.date_col: [
                         fcst_first_date + datetime.timedelta(days=x)
                         for x in range(n_days)
                     ],
-                    "yhat": self.model.predict(n_periods=n_days),
+                    self.fcst_col: self.model.predict(n_periods=n_days),
                 }
             )
 
