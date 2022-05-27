@@ -110,13 +110,17 @@ class KRNSProphet:
         if floor:
             self.floor = floor
         else:
-            self.floor = train_data[metric_col].min() / 10 if train_data.shape[0] > 0 else 0
+            self.floor = (
+                train_data[metric_col].min() / 10 if train_data.shape[0] > 0 else 0
+            )
 
         if cap:
             self.cap = cap
         else:
             self.cap = (
-                train_data[metric_col].max() * 10 if train_data.shape[0] > 0 else 1000000000000000000
+                train_data[metric_col].max() * 10
+                if train_data.shape[0] > 0
+                else 1000000000000000000
             )
 
         # To load an already configured model
@@ -266,7 +270,9 @@ class KRNSProphet:
             pred = pred[pred["ds"] >= fcst_first_date]
 
             # Rename columns
-            pred.rename(columns={"ds": self.date_col, "yhat": self.fcst_col}, inplace=True)
+            pred.rename(
+                columns={"ds": self.date_col, "yhat": self.fcst_col}, inplace=True
+            )
 
             return pred
 

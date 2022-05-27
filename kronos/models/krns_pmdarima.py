@@ -130,7 +130,9 @@ class KRNSPmdarima:
         """
         try:
             # TODO: Signature to add before log the model
-            mlflow.pmdarima.log_model(pmdarima_model=self.model, artifact_path=artifact_path)
+            mlflow.pmdarima.log_model(
+                pmdarima_model=self.model, artifact_path=artifact_path
+            )
             logger.info(f"### Model logged: {self.model}")
 
         except Exception as e:
