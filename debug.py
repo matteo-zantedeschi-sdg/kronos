@@ -60,3 +60,17 @@ pred['ds'] = pred['ds'].dt.date
 pred = pred[pred['ds'] >= fcst_first_date]
 
 print(pred)
+
+class Test:
+    def __init__(self, input: pd.DataFrame):
+        self.input = input.copy()
+        self.input.rename(columns={'col1': 'col1b'}, inplace=True)
+
+
+d = {'col1': [1, 2], 'col2': [3, 4]}
+df = pd.DataFrame(data=d)
+
+test = Test(input=df)
+
+print(test.input)
+print(df)

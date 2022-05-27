@@ -37,8 +37,8 @@ class KRNSProphet:
         self.date_col = date_col
         self.metric_col = metric_col
         self.fcst_col = fcst_col
-        self.train_data = train_data
-        self.test_data = test_data
+        self.train_data = train_data.copy()
+        self.test_data = test_data.copy()
 
         # Model attributes
         self.interval_width = interval_width if not model else model.interval_width

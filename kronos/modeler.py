@@ -169,7 +169,7 @@ class Modeler:
                     # Make predictions
                     test_data_first_date = self.test_data[self.date_col].sort_values(
                         ascending=True
-                    )[0]
+                    ).iloc[0]
                     pred = model.predict(
                         n_days=self.n_test, fcst_first_date=test_data_first_date
                     )
@@ -222,7 +222,7 @@ class Modeler:
             # Predict with current production model (on test set)
             test_data_first_date = self.test_data[self.date_col].sort_values(
                 ascending=True
-            )[0]
+            ).iloc[0]
             pred = krns_model.predict(
                 n_days=self.n_test, fcst_first_date=test_data_first_date
             )
