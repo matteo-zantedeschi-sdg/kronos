@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>krns_pmdarima module &mdash; kronos 1.0.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="krns_prophet module" href="krns_prophet.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> kronos
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="forecast_udf.html">forecast_udf module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modeler.html">modeler module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ml_flower.html">ml_flower module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="krns_prophet.html">krns_prophet module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">krns_pmdarima module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-krnspmdarima-class">The KRNSPmdarima class</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">kronos</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>krns_pmdarima module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/krns_pmdarima.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="krns-pmdarima-module">
+<h1>krns_pmdarima module<a class="headerlink" href="#krns-pmdarima-module" title="Permalink to this headline"></a></h1>
+<p>The krns_pmdarima module contains…</p>
+<section id="the-krnspmdarima-class">
+<h2>The KRNSPmdarima class<a class="headerlink" href="#the-krnspmdarima-class" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="kronos.models.krns_pmdarima.KRNSPmdarima">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kronos.models.krns_pmdarima.</span></span><span class="sig-name descname"><span class="pre">KRNSPmdarima</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key_col:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date_col:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric_col:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fcst_col:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_data:</span> <span class="pre">pandas.core.frame.DataFrame</span> <span class="pre">=</span> <span class="pre">Empty</span> <span class="pre">DataFrame</span> <span class="pre">Columns:</span> <span class="pre">[]</span> <span class="pre">Index:</span> <span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_data:</span> <span class="pre">pandas.core.frame.DataFrame</span> <span class="pre">=</span> <span class="pre">Empty</span> <span class="pre">DataFrame</span> <span class="pre">Columns:</span> <span class="pre">[]</span> <span class="pre">Index:</span> <span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model:</span> <span class="pre">typing.Optional[pmdarima.arima.arima.ARIMA]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">7</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seasonal:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kronos.models.krns_pmdarima.KRNSPmdarima" title="Permalink to this definition"></a></dt>
+<dd><p>Class to implement pm.arima.arima.ARIMA in kronos.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.models.krns_pmdarima.KRNSPmdarima.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key_col:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date_col:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric_col:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fcst_col:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_data:</span> <span class="pre">pandas.core.frame.DataFrame</span> <span class="pre">=</span> <span class="pre">Empty</span> <span class="pre">DataFrame</span> <span class="pre">Columns:</span> <span class="pre">[]</span> <span class="pre">Index:</span> <span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_data:</span> <span class="pre">pandas.core.frame.DataFrame</span> <span class="pre">=</span> <span class="pre">Empty</span> <span class="pre">DataFrame</span> <span class="pre">Columns:</span> <span class="pre">[]</span> <span class="pre">Index:</span> <span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model:</span> <span class="pre">typing.Optional[pmdarima.arima.arima.ARIMA]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">7</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seasonal:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#kronos.models.krns_pmdarima.KRNSPmdarima.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialization method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key_col</strong> (<em>str</em>) – The name of the column indicating the time series key.</p></li>
+<li><p><strong>date_col</strong> (<em>str</em>) – The name of the column indicating the time dimension.</p></li>
+<li><p><strong>metric_col</strong> (<em>str</em>) – The name of the column indicating the dimension to forecast.</p></li>
+<li><p><strong>fcst_col</strong> (<em>str</em>) – The name of the column indication the forecast.</p></li>
+<li><p><strong>train_data</strong> (<em>pd.DataFrame</em>) – Pandas DataFrame with the training data.</p></li>
+<li><p><strong>test_data</strong> (<em>pd.DataFrame</em>) – Pandas DataFrame with the test data.</p></li>
+<li><p><strong>model</strong> (<em>pm.arima.arima.ARIMA</em>) – An already fitted ARIMA model, to instantiate a kronos Pmdarima from an already fitted model.</p></li>
+<li><p><strong>m</strong> (<em>int</em>) – The period for seasonal differencing, m refers to the number of periods in each season.</p></li>
+<li><p><strong>seasonal</strong> (<em>bool</em>) – Whether to fit a seasonal ARIMA.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>No return.</p>
+</dd>
+</dl>
+<p><strong>Example</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">KRNSPmdarima</span><span class="p">(</span>
+        <span class="n">train_data</span><span class="o">=</span><span class="n">df_train</span><span class="p">,</span>
+        <span class="n">test_data</span><span class="o">=</span><span class="n">df_test</span><span class="p">,</span>
+        <span class="n">key_col</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span>
+        <span class="n">date_col</span><span class="o">=</span><span class="s1">&#39;date&#39;</span><span class="p">,</span>
+        <span class="n">metric_col</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">,</span>
+        <span class="n">fcst_col</span><span class="o">=</span><span class="s1">&#39;y_hat&#39;</span><span class="p">,</span>
+        <span class="n">m</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+        <span class="n">seasonal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.models.krns_pmdarima.KRNSPmdarima.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#kronos.models.krns_pmdarima.KRNSPmdarima.fit" title="Permalink to this definition"></a></dt>
+<dd><p>Instantiate the model class and fit the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>No return.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.models.krns_pmdarima.KRNSPmdarima.log_model">
+<span class="sig-name descname"><span class="pre">log_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#kronos.models.krns_pmdarima.KRNSPmdarima.log_model" title="Permalink to this definition"></a></dt>
+<dd><p>Log the model artifact to mlflow.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>artifact_path</strong> (<em>str</em>) – Run-relative artifact path.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>No return.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.models.krns_pmdarima.KRNSPmdarima.log_params">
+<span class="sig-name descname"><span class="pre">log_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">client</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">mlflow.tracking.client.MlflowClient</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#kronos.models.krns_pmdarima.KRNSPmdarima.log_params" title="Permalink to this definition"></a></dt>
+<dd><p>Log the model params to mlflow.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>client</strong> (<em>MlflowClient</em>) – The mlflow client used to log parameters.</p></li>
+<li><p><strong>run_id</strong> (<em>str</em>) – The run id under which log parameters.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>No return.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.models.krns_pmdarima.KRNSPmdarima.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_days</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fcst_first_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime.date</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">datetime.date(2022,</span> <span class="pre">5,</span> <span class="pre">27)</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pandas.core.frame.DataFrame</span></span></span><a class="headerlink" href="#kronos.models.krns_pmdarima.KRNSPmdarima.predict" title="Permalink to this definition"></a></dt>
+<dd><p>Predict using the fitted model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n_days</strong> (<em>int</em>) – Number of data points to predict.</p></li>
+<li><p><strong>fcst_first_date</strong> (<em>datetime.date</em>) – First date of forecast.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>(pd.DataFrame)</em> Pandas DataFrame containing the predictions.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.models.krns_pmdarima.KRNSPmdarima.preprocess">
+<span class="sig-name descname"><span class="pre">preprocess</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#kronos.models.krns_pmdarima.KRNSPmdarima.preprocess" title="Permalink to this definition"></a></dt>
+<dd><p>Get the dataframe into the condition to be processed by the model: keep only the <em>date</em> and <em>metric</em> column.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>No return.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="krns_prophet.html" class="btn btn-neutral float-left" title="krns_prophet module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, zantedeschim.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

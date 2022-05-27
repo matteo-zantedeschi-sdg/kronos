@@ -67,7 +67,7 @@ def forecast_udf_gen(
                 quality_col='quality',
                 action_col='action',
                 models_col='models',
-                models_config='models_config',
+                models_config='{"pmdarima_1":{"model_flavor":"pmdarima","m":7,"seasonal":true}}',
                 days_from_last_obs_col='days_from_last_obs',
                 current_date=(date.today() + timedelta(-1)).strftime('%Y-%m-%d'),
                 fcst_first_date=date.today().strftime('%Y-%m-%d'),

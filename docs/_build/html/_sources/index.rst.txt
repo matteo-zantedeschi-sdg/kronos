@@ -11,6 +11,10 @@ Welcome to kronos's documentation!
    :caption: Contents:
 
    forecast_udf
+   modeler
+   ml_flower
+   krns_prophet
+   krns_pmdarima
 
 Indices and tables
 ==================

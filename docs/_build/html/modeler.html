@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>modeler module &mdash; kronos 1.0.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="ml_flower module" href="ml_flower.html" />
+    <link rel="prev" title="forecast_udf module" href="forecast_udf.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> kronos
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="forecast_udf.html">forecast_udf module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">modeler module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-modeler-class">The Modeler class</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ml_flower.html">ml_flower module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="krns_prophet.html">krns_prophet module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="krns_pmdarima.html">krns_pmdarima module</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">kronos</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>modeler module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/modeler.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="modeler-module">
+<h1>modeler module<a class="headerlink" href="#modeler-module" title="Permalink to this headline"></a></h1>
+<p>The modeler module contains…</p>
+<section id="the-modeler-class">
+<h2>The Modeler class<a class="headerlink" href="#the-modeler-class" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="kronos.modeler.Modeler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kronos.modeler.</span></span><span class="sig-name descname"><span class="pre">Modeler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ml_flower</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="ml_flower.html#kronos.ml_flower.MLFlower" title="kronos.ml_flower.MLFlower"><span class="pre">kronos.ml_flower.MLFlower</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fcst_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">models_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">days_from_last_obs_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime.date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fcst_first_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime.date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_test</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_unit_test</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fcst_horizon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt_creation_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt_reference_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kronos.modeler.Modeler" title="Permalink to this definition"></a></dt>
+<dd><p>Class to manage all modelling activities.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.modeler.Modeler.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ml_flower</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="ml_flower.html#kronos.ml_flower.MLFlower" title="kronos.ml_flower.MLFlower"><span class="pre">kronos.ml_flower.MLFlower</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fcst_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">models_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">days_from_last_obs_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime.date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fcst_first_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime.date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_test</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_unit_test</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fcst_horizon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt_creation_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt_reference_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#kronos.modeler.Modeler.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialization method.</p>
+<p>Other than init attributes, the <em>key_code</em> and <em>max_value</em> attributes are extracted from data: the first is used to name different objects (e.g. name of the mlflow experiment); the second to set a cap in the training of certain models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ml_flower</strong> (<a class="reference internal" href="ml_flower.html#kronos.ml_flower.MLFlower" title="kronos.ml_flower.MLFlower"><em>MLFlower</em></a>) – The MLFlower instance used to interact with mlflow.</p></li>
+<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – The pandas DataFrame containing all the information.</p></li>
+<li><p><strong>key_col</strong> (<em>str</em>) – The name of the column indicating the time series key.</p></li>
+<li><p><strong>date_col</strong> (<em>str</em>) – The name of the column indicating the time dimension.</p></li>
+<li><p><strong>metric_col</strong> (<em>str</em>) – The name of the column indicating the dimension to forecast.</p></li>
+<li><p><strong>fcst_col</strong> (<em>str</em>) – The name of the column indication the forecast.</p></li>
+<li><p><strong>models_config</strong> (<em>dict</em>) – The dict containing all the model configurations.</p></li>
+<li><p><strong>days_from_last_obs_col</strong> (<em>str</em>) – The name of the column indicating the days since the last available observation in the time series.</p></li>
+<li><p><strong>current_date</strong> (<em>datetime.date</em>) – Current processing date.</p></li>
+<li><p><strong>fcst_first_date</strong> (<em>datetime.date</em>) – Date of first day of forecast, usually is the day following the current date.</p></li>
+<li><p><strong>n_test</strong> (<em>int</em>) – Number of observations to use as test set.</p></li>
+<li><p><strong>n_unit_test</strong> (<em>int</em>) – Number of points to forecast in the model deployment’s unit test.</p></li>
+<li><p><strong>fcst_horizon</strong> (<em>int</em>) – Number of points to forecast.</p></li>
+<li><p><strong>dt_creation_col</strong> (<em>str</em>) – The name of the column indicating the forecast creation date.</p></li>
+<li><p><strong>dt_reference_col</strong> (<em>str</em>) – The name of the column indicating the date used as reference date for forecast.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>No return.</p>
+</dd>
+</dl>
+<p><strong>Example</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">modeler</span> <span class="o">=</span> <span class="n">Modeler</span><span class="p">(</span>
+        <span class="n">client</span><span class="o">=</span><span class="n">MLFlower</span><span class="p">(</span><span class="n">client</span><span class="o">=</span><span class="n">client</span><span class="p">),</span>
+        <span class="n">data</span><span class="o">=</span><span class="n">df</span><span class="p">,</span>
+        <span class="n">key_col</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span>
+        <span class="n">date_col</span><span class="o">=</span><span class="s1">&#39;date&#39;</span><span class="p">,</span>
+        <span class="n">metric_col</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">,</span>
+        <span class="n">fcst_col</span><span class="o">=</span><span class="s1">&#39;y_hat&#39;</span><span class="p">,</span>
+        <span class="n">models_config</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;pmdarima_1&quot;</span><span class="p">:{</span><span class="s2">&quot;model_flavor&quot;</span><span class="p">:</span><span class="s2">&quot;pmdarima&quot;</span><span class="p">,</span><span class="s2">&quot;m&quot;</span><span class="p">:</span><span class="mi">7</span><span class="p">,</span><span class="s2">&quot;seasonal&quot;</span><span class="p">:</span><span class="n">true</span><span class="p">}},</span>
+        <span class="n">days_from_last_obs_col</span><span class="o">=</span><span class="s1">&#39;days_from_last_obs&#39;</span><span class="p">,</span>
+        <span class="n">current_date</span><span class="o">=</span><span class="p">(</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">),</span>
+        <span class="n">fcst_first_date</span><span class="o">=</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">),</span>
+        <span class="n">n_test</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+        <span class="n">n_unit_test</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+        <span class="n">fcst_horizon</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+        <span class="n">dt_creation_col</span><span class="o">=</span><span class="s1">&#39;creation_date&#39;</span><span class="p">,</span>
+        <span class="n">dt_reference_col</span><span class="o">=</span><span class="s1">&#39;reference_date&#39;</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.modeler.Modeler.competition">
+<span class="sig-name descname"><span class="pre">competition</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#kronos.modeler.Modeler.competition" title="Permalink to this definition"></a></dt>
+<dd><p>Method used to find the best available model among those trained and the one currently in production.
+A score is computed combining several metrics: the model associated with the maximum score is the winning one.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>No return.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.modeler.Modeler.create_all_models">
+<span class="sig-name descname"><span class="pre">create_all_models</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">models_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#kronos.modeler.Modeler.create_all_models" title="Permalink to this definition"></a></dt>
+<dd><p>Method to instantiate all the kronos models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>models_config</strong> (<em>dict</em>) – The dict containing all the model configurations.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>(dict)</em> The list with all the instances of kronos models.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.modeler.Modeler.deploy">
+<span class="sig-name descname"><span class="pre">deploy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#kronos.modeler.Modeler.deploy" title="Permalink to this definition"></a></dt>
+<dd><p>Method to perform the winning model deploy into the mlflow Model Registry.
+The main steps are:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Register the mlflow run artifact model into the mlflow Model Registry.</p></li>
+<li><p>Set the model flavor as tag of the model, for information purposes only (not required by mlflow).</p></li>
+<li><p>Promote the model to the “Staging” stage of the mlflow Model Registry.</p></li>
+<li><p>Perform the model unit test.</p></li>
+<li><p>If the unit test succeed, promote the model to the “Production” stage of the mlflow Model Registry.</p></li>
+</ol>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>No return.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.modeler.Modeler.evaluate_model">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">evaluate_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#kronos.modeler.Modeler.evaluate_model" title="Permalink to this definition"></a></dt>
+<dd><p>A static method which computes a list of metrics with which to evaluate the model’s predictions.
+Currently supported metrics are: rmse, mape.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>actual</strong> (<em>np.ndarray</em>) – Array containing the actual data.</p></li>
+<li><p><strong>pred</strong> (<em>np.ndarray</em>) – Array containing the predicted data.</p></li>
+<li><p><strong>metrics</strong> (<em>list</em>) – List of metrics (as strings) to compute.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>(dict)</em> A dictionary containing all metric names as keys and their computed values as values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.modeler.Modeler.model_generation">
+<span class="sig-name descname"><span class="pre">model_generation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_flavor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trained_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kronos.modeler.Modeler.model_generation" title="Permalink to this definition"></a></dt>
+<dd><p>Method to instantiate a single kronos models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_flavor</strong> (<em>str</em>) – The flavor of the model (e.g. ‘prophet’).</p></li>
+<li><p><strong>model_config</strong> (<em>dict</em>) – The dict containing all the model configurations.</p></li>
+<li><p><strong>trained_model</strong> – An already fitted model. To instantiate a kronos model from an already fitted model.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The kronos model instantiated.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.modeler.Modeler.prediction">
+<span class="sig-name descname"><span class="pre">prediction</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pandas.core.frame.DataFrame</span></span></span><a class="headerlink" href="#kronos.modeler.Modeler.prediction" title="Permalink to this definition"></a></dt>
+<dd><p>Method to perform prediction using an mlflow model.
+The model is retrieved from the “Production” stage of the mlflow Model Registry, then it is used to provide the predictions.
+Finally, informative columns are added (e.g. days from last execution) and negative predictions are removed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><em>(pd.DataFrame)</em> Pandas DataFrame containing the predictions.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.modeler.Modeler.prod_model_eval">
+<span class="sig-name descname"><span class="pre">prod_model_eval</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#kronos.modeler.Modeler.prod_model_eval" title="Permalink to this definition"></a></dt>
+<dd><p>Method used to retrieve the current production model from mlflow Model Registry.
+The model is used to predict on test set and compute evaluation metrics.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>No return.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.modeler.Modeler.train_test_split">
+<span class="sig-name descname"><span class="pre">train_test_split</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#kronos.modeler.Modeler.train_test_split" title="Permalink to this definition"></a></dt>
+<dd><p>A method to split data into train/test splits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>No return.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.modeler.Modeler.training">
+<span class="sig-name descname"><span class="pre">training</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#kronos.modeler.Modeler.training" title="Permalink to this definition"></a></dt>
+<dd><p>A method to perform all the training activities:</p>
+<blockquote>
+<div><ol class="arabic">
+<li><p>Define an mlflow experiment.</p></li>
+<li><p>Perform train/test split of data.</p></li>
+<li><p>Init all kronos models to train and store them in a dictionary.</p></li>
+<li><p>For each model to train:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Start an mlflow run.</p></li>
+<li><p>Preprocess data (<em>e.g. renaming columns in prophet models</em>).</p></li>
+<li><p>Log model params in the mlflow run.</p></li>
+<li><p>Fit the model.</p></li>
+<li><p>Log the fitted model as artifact in the mlflow run.</p></li>
+<li><p>Compute evaluation metrics and add them in a <em>performance dataframe</em> (to later compare models).</p></li>
+<li><p>Log metrics in the mlflow run.</p></li>
+<li><p>End run.</p></li>
+</ol>
+</div></blockquote>
+</li>
+</ol>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>No return.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.modeler.Modeler.unit_test">
+<span class="sig-name descname"><span class="pre">unit_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_version_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_version_stage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#kronos.modeler.Modeler.unit_test" title="Permalink to this definition"></a></dt>
+<dd><p>Method to perform an infrastructure unit test on a mlflow model.
+The model is first retrieved from the mlflow Model Registry, then it is used to predict n data points.
+If the number of output predictions matches the number of predictions required then the test result is <em>OK</em>, otherwise <em>KO</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_version_name</strong> (<em>str</em>) – The name of the model to test.</p></li>
+<li><p><strong>model_version_stage</strong> (<em>str</em>) – The stage of the model to test.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>(str)</em> The unit test status: ‘OK’ or ‘KO’.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="forecast_udf.html" class="btn btn-neutral float-left" title="forecast_udf module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ml_flower.html" class="btn btn-neutral float-right" title="ml_flower module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, zantedeschim.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

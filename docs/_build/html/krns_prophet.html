@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>krns_prophet module &mdash; kronos 1.0.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="krns_pmdarima module" href="krns_pmdarima.html" />
+    <link rel="prev" title="ml_flower module" href="ml_flower.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> kronos
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="forecast_udf.html">forecast_udf module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modeler.html">modeler module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ml_flower.html">ml_flower module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">krns_prophet module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-krnsprophet-class">The KRNSProphet class</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="krns_pmdarima.html">krns_pmdarima module</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">kronos</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>krns_prophet module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/krns_prophet.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="krns-prophet-module">
+<h1>krns_prophet module<a class="headerlink" href="#krns-prophet-module" title="Permalink to this headline"></a></h1>
+<p>The krns_prophet module contains…</p>
+<section id="the-krnsprophet-class">
+<h2>The KRNSProphet class<a class="headerlink" href="#the-krnsprophet-class" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="kronos.models.krns_prophet.KRNSProphet">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kronos.models.krns_prophet.</span></span><span class="sig-name descname"><span class="pre">KRNSProphet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key_col:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date_col:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric_col:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fcst_col:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_data:</span> <span class="pre">pandas.core.frame.DataFrame</span> <span class="pre">=</span> <span class="pre">Empty</span> <span class="pre">DataFrame</span> <span class="pre">Columns:</span> <span class="pre">[]</span> <span class="pre">Index:</span> <span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_data:</span> <span class="pre">pandas.core.frame.DataFrame</span> <span class="pre">=</span> <span class="pre">Empty</span> <span class="pre">DataFrame</span> <span class="pre">Columns:</span> <span class="pre">[]</span> <span class="pre">Index:</span> <span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval_width:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">growth:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">daily_seasonality:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weekly_seasonality:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yearly_seasonality:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seasonality_mode:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'multiplicative'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">floor:</span> <span class="pre">typing.Optional[int]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cap:</span> <span class="pre">typing.Optional[int]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">country_holidays:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'IT'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model:</span> <span class="pre">typing.Optional[prophet.forecaster.Prophet]</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kronos.models.krns_prophet.KRNSProphet" title="Permalink to this definition"></a></dt>
+<dd><p>Class to implement Prophet in kronos.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.models.krns_prophet.KRNSProphet.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key_col:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date_col:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric_col:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fcst_col:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_data:</span> <span class="pre">pandas.core.frame.DataFrame</span> <span class="pre">=</span> <span class="pre">Empty</span> <span class="pre">DataFrame</span> <span class="pre">Columns:</span> <span class="pre">[]</span> <span class="pre">Index:</span> <span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_data:</span> <span class="pre">pandas.core.frame.DataFrame</span> <span class="pre">=</span> <span class="pre">Empty</span> <span class="pre">DataFrame</span> <span class="pre">Columns:</span> <span class="pre">[]</span> <span class="pre">Index:</span> <span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval_width:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">growth:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">daily_seasonality:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weekly_seasonality:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yearly_seasonality:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seasonality_mode:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'multiplicative'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">floor:</span> <span class="pre">typing.Optional[int]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cap:</span> <span class="pre">typing.Optional[int]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">country_holidays:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'IT'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model:</span> <span class="pre">typing.Optional[prophet.forecaster.Prophet]</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#kronos.models.krns_prophet.KRNSProphet.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialization method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key_col</strong> (<em>str</em>) – The name of the column indicating the time series key.</p></li>
+<li><p><strong>date_col</strong> (<em>str</em>) – The name of the column indicating the time dimension.</p></li>
+<li><p><strong>metric_col</strong> (<em>str</em>) – The name of the column indicating the dimension to forecast.</p></li>
+<li><p><strong>fcst_col</strong> (<em>str</em>) – The name of the column indication the forecast.</p></li>
+<li><p><strong>train_data</strong> (<em>pd.DataFrame</em>) – Pandas DataFrame with the training data.</p></li>
+<li><p><strong>test_data</strong> (<em>pd.DataFrame</em>) – Pandas DataFrame with the test data.</p></li>
+<li><p><strong>interval_width</strong> (<em>float</em>) – Width of the uncertainty intervals provided for the forecast.</p></li>
+<li><p><strong>growth</strong> (<em>str</em>) – String ’linear’, ’logistic’, or ’flat’ to specify a linear, logistic or flat trend.</p></li>
+<li><p><strong>daily_seasonality</strong> (<em>bool</em>) – Fit daily seasonality.</p></li>
+<li><p><strong>weekly_seasonality</strong> (<em>bool</em>) – Fit weekly seasonality.</p></li>
+<li><p><strong>yearly_seasonality</strong> (<em>bool</em>) – Fit yearly seasonality.</p></li>
+<li><p><strong>seasonality_mode</strong> (<em>str</em>) – One among ‘additive’ (default) or ‘multiplicative’.</p></li>
+<li><p><strong>floor</strong> (<em>int</em>) – The saturating minimum of the time-series to forecast.</p></li>
+<li><p><strong>cap</strong> (<em>int</em>) – The saturating maximum  of the time-series to forecast.</p></li>
+<li><p><strong>country_holidays</strong> (<em>str</em>) – Name of the country to add holidays for.</p></li>
+<li><p><strong>model</strong> (<em>Prophet</em>) – An already fitted Prophet model, to instantiate a kronos Prophet from an already fitted model.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>No return.</p>
+</dd>
+</dl>
+<p><strong>Example</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">krns_model</span> <span class="o">=</span> <span class="n">KRNSProphet</span><span class="p">(</span>
+        <span class="n">train_data</span><span class="o">=</span><span class="n">df_train</span><span class="p">,</span>
+        <span class="n">test_data</span><span class="o">=</span><span class="n">df_test</span><span class="p">,</span>
+        <span class="n">key_col</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span>
+        <span class="n">date_col</span><span class="o">=</span><span class="s1">&#39;date&#39;</span><span class="p">,</span>
+        <span class="n">metric_col</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">,</span>
+        <span class="n">fcst_col</span><span class="o">=</span><span class="s1">&#39;y_hat&#39;</span><span class="p">,</span>
+        <span class="n">interval_width</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+        <span class="n">growth</span><span class="o">=</span><span class="s1">&#39;logistic&#39;</span><span class="p">,</span>
+        <span class="n">daily_seasonality</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">weekly_seasonality</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">yearly_seasonality</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">seasonality_mode</span><span class="o">=</span><span class="s1">&#39;multiplicative&#39;</span><span class="p">,</span>
+        <span class="n">floor</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">cap</span><span class="o">=</span><span class="mi">9999999999999</span><span class="p">,</span>
+        <span class="n">country_holidays</span><span class="o">=</span><span class="s1">&#39;IT&#39;</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.models.krns_prophet.KRNSProphet.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#kronos.models.krns_prophet.KRNSProphet.fit" title="Permalink to this definition"></a></dt>
+<dd><dl class="simple">
+<dt>Fit the model:</dt><dd><ol class="arabic simple">
+<li><p>Instantiate the model class.</p></li>
+<li><p>Add floor/cap to train data.</p></li>
+<li><p>Add country holidays.</p></li>
+<li><p>Fit the model.</p></li>
+<li><p>Remove floor/cap columns from train data.</p></li>
+</ol>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>No return.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.models.krns_prophet.KRNSProphet.log_model">
+<span class="sig-name descname"><span class="pre">log_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#kronos.models.krns_prophet.KRNSProphet.log_model" title="Permalink to this definition"></a></dt>
+<dd><p>Log the model artifact to mlflow.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>artifact_path</strong> (<em>str</em>) – Run-relative artifact path.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>No return.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.models.krns_prophet.KRNSProphet.log_params">
+<span class="sig-name descname"><span class="pre">log_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">client</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">mlflow.tracking.client.MlflowClient</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#kronos.models.krns_prophet.KRNSProphet.log_params" title="Permalink to this definition"></a></dt>
+<dd><p>Log the model params to mlflow.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>client</strong> (<em>MlflowClient</em>) – The mlflow client used to log parameters.</p></li>
+<li><p><strong>run_id</strong> (<em>str</em>) – The run id under which log parameters.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>No return.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.models.krns_prophet.KRNSProphet.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_days</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fcst_first_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime.date</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">datetime.date(2022,</span> <span class="pre">5,</span> <span class="pre">27)</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pandas.core.frame.DataFrame</span></span></span><a class="headerlink" href="#kronos.models.krns_prophet.KRNSProphet.predict" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n_days</strong> (<em>int</em>) – Number of data points to predict.</p></li>
+<li><p><strong>fcst_first_date</strong> (<em>datetime.date</em>) – First date of forecast.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>(pd.DataFrame)</em> Pandas DataFrame containing the predictions.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.models.krns_prophet.KRNSProphet.preprocess">
+<span class="sig-name descname"><span class="pre">preprocess</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#kronos.models.krns_prophet.KRNSProphet.preprocess" title="Permalink to this definition"></a></dt>
+<dd><p>Get the dataframe into the condition to be processed by the model: renaming columns with date as ‘ds’ and with metric as ‘y’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>No return.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ml_flower.html" class="btn btn-neutral float-left" title="ml_flower module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="krns_pmdarima.html" class="btn btn-neutral float-right" title="krns_pmdarima module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, zantedeschim.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

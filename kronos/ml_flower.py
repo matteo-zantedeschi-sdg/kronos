@@ -10,22 +10,46 @@ logger = logging.getLogger(__name__)
 
 
 class MLFlower:
-    def __init__(self, client: MlflowClient):
+    """
+    Class to manage all mlflow activities.
+    """
+
+    def __init__(self, client: MlflowClient) -> None:
+        """
+        Initialization method.
+
+        :param MlflowClient client: The mlflow client used to track experiments and register models.
+
+        :return: No return.
+
+        **Example**
+
+        .. code-block:: python
+
+            ml_flower = MLFlower(client=client)
+
+        """
         self.client = client
         self.experiment = Optional[str]
 
-    def start_run(self, run_name: str):
+    def start_run(self, run_name: str) -> mlflow.ActiveRun:
         """
-        # TODO: Doc
+        Start a new MLflow run with a specific run name.
+
+        :param str run_name: Name of the run to start.
+
+        :return: *(mlflow.ActiveRun)* object that acts as a context manager wrapping the run’s state.
         """
         run = mlflow.start_run(experiment_id=self.experiment, run_name=run_name)
         logger.info(f"### Run started: {run}")
         return run
 
     @staticmethod
-    def end_run():
+    def end_run() -> None:
         """
-        # TODO: Doc
+        A static method to end an active MLflow run (if there is one).
+
+        :return: No return.
         """
         mlflow.end_run()
         logger.info("### Run ended")
@@ -33,7 +57,14 @@ class MLFlower:
     @staticmethod
     def load_model(model_uri: str):
         """
-        # TODO: Doc
+        Static method to load a model in Python function format from a specific uri.
+        Based on its flavor (e.g. 'prophet') the model is later reloaded using the specific loader module.
+
+        :param str model_uri: The uri of the model to load.
+
+        :return:
+            * The model flavor detected.
+            * The model loaded.
         """
         try:
             # Get PyFuncModel
@@ -45,7 +76,6 @@ class MLFlower:
             )
             flavor = loader_module.split(".")[-1]
 
-            # TODO: To add all the supported model classes
             if loader_module == "mlflow.prophet":
                 model = mlflow.prophet.load_model(model_uri)
             elif loader_module == "mlflow.pmdarima":
@@ -58,9 +88,14 @@ class MLFlower:
         except Exception as e:
             logger.error(f"### Model loading failed: {e}")
 
-    def get_experiment(self, experiment_path: str):
+    def get_experiment(self, experiment_path: str) -> None:
         """
-        # TODO:
+        Method that try to create an experiment in a specific experiment path.
+        If the experiment already exists, then the experiment is retrieved.
+
+        :param str experiment_path: The experiment path to create/get.
+
+        :return: No return.
         """
         # Create/Get experiment
         try:
@@ -76,6 +111,15 @@ class MLFlower:
     def register_model(
         self, model_uri: str, model_name: str, timeout_s: int
     ) -> ModelVersion:
+        """
+        Create a new model version in model registry for the model files specified by model_uri.
+
+        :param str model_uri: Uri of the model to register.
+        :param str model_name: Name of the registered model under which to create a new model version.
+        :param int timeout_s: Maximum number of seconds to wait for the model version to finish being created.
+
+        :return: *(ModelVersion)* The ModelVersion object created, corresponding to the model registered.
+        """
 
         # Register the trained model to MLflow Registry
         model_details = mlflow.register_model(model_uri=model_uri, name=model_name)
@@ -96,9 +140,15 @@ class MLFlower:
 
     def set_model_tag(
         self, model_version_details: ModelVersion, tag_key: str, tag_value: str
-    ):
+    ) -> None:
         """
-        TODO: Doc
+        Set a tag for a specific model version.
+
+        :param ModelVersion model_version_details: Registered model version details.
+        :param str tag_key: Tag key to log.
+        :param str tag_value: Tag value to log.
+
+        :return: No return.
         """
         # Set the model flavor tag
         self.client.set_model_version_tag(
@@ -114,10 +164,15 @@ class MLFlower:
         model_version_details: ModelVersion,
         stage: str,
         archive_existing_versions: bool,
-    ):
+    ) -> ModelVersion:
         """
-        # TODO: Doc
-        :return:
+        Method used to update the model version stage.
+
+        :param ModelVersion model_version_details: Model version details of the model to promote.
+        :param str stage: Stage in which to promote the model.
+        :param bool archive_existing_versions: If this flag is set to True, all existing model versions in the stage will be automically moved to the “archived” stage.
+
+        :return: *(ModelVersion)* Model version object promoted.
         """
         try:
             model_version = self.client.transition_model_version_stage(

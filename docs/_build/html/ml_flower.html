@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ml_flower module &mdash; kronos 1.0.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="krns_prophet module" href="krns_prophet.html" />
+    <link rel="prev" title="modeler module" href="modeler.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> kronos
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="forecast_udf.html">forecast_udf module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modeler.html">modeler module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ml_flower module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-mlflower-class">The MLFlower class</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="krns_prophet.html">krns_prophet module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="krns_pmdarima.html">krns_pmdarima module</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">kronos</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>ml_flower module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/ml_flower.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ml-flower-module">
+<h1>ml_flower module<a class="headerlink" href="#ml-flower-module" title="Permalink to this headline"></a></h1>
+<p>The ml_flower module contains…</p>
+<section id="the-mlflower-class">
+<h2>The MLFlower class<a class="headerlink" href="#the-mlflower-class" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="kronos.ml_flower.MLFlower">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kronos.ml_flower.</span></span><span class="sig-name descname"><span class="pre">MLFlower</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">client</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">mlflow.tracking.client.MlflowClient</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kronos.ml_flower.MLFlower" title="Permalink to this definition"></a></dt>
+<dd><p>Class to manage all mlflow activities.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.ml_flower.MLFlower.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">client</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">mlflow.tracking.client.MlflowClient</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#kronos.ml_flower.MLFlower.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialization method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>client</strong> (<em>MlflowClient</em>) – The mlflow client used to track experiments and register models.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>No return.</p>
+</dd>
+</dl>
+<p><strong>Example</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ml_flower</span> <span class="o">=</span> <span class="n">MLFlower</span><span class="p">(</span><span class="n">client</span><span class="o">=</span><span class="n">client</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.ml_flower.MLFlower.end_run">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">end_run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#kronos.ml_flower.MLFlower.end_run" title="Permalink to this definition"></a></dt>
+<dd><p>A static method to end an active MLflow run (if there is one).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>No return.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.ml_flower.MLFlower.get_experiment">
+<span class="sig-name descname"><span class="pre">get_experiment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#kronos.ml_flower.MLFlower.get_experiment" title="Permalink to this definition"></a></dt>
+<dd><p>Method that try to create an experiment in a specific experiment path.
+If the experiment already exists, then the experiment is retrieved.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>experiment_path</strong> (<em>str</em>) – The experiment path to create/get.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>No return.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.ml_flower.MLFlower.load_model">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_uri</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kronos.ml_flower.MLFlower.load_model" title="Permalink to this definition"></a></dt>
+<dd><p>Static method to load a model in Python function format from a specific uri.
+Based on its flavor (e.g. ‘prophet’) the model is later reloaded using the specific loader module.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>model_uri</strong> (<em>str</em>) – The uri of the model to load.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p>The model flavor detected.</p></li>
+<li><p>The model loaded.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.ml_flower.MLFlower.promote_model">
+<span class="sig-name descname"><span class="pre">promote_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_version_details</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">mlflow.entities.model_registry.model_version.ModelVersion</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">archive_existing_versions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">mlflow.entities.model_registry.model_version.ModelVersion</span></span></span><a class="headerlink" href="#kronos.ml_flower.MLFlower.promote_model" title="Permalink to this definition"></a></dt>
+<dd><p>Method used to update the model version stage.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_version_details</strong> (<em>ModelVersion</em>) – Model version details of the model to promote.</p></li>
+<li><p><strong>stage</strong> (<em>str</em>) – Stage in which to promote the model.</p></li>
+<li><p><strong>archive_existing_versions</strong> (<em>bool</em>) – If this flag is set to True, all existing model versions in the stage will be automically moved to the “archived” stage.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>(ModelVersion)</em> Model version object promoted.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.ml_flower.MLFlower.register_model">
+<span class="sig-name descname"><span class="pre">register_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_uri</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout_s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">mlflow.entities.model_registry.model_version.ModelVersion</span></span></span><a class="headerlink" href="#kronos.ml_flower.MLFlower.register_model" title="Permalink to this definition"></a></dt>
+<dd><p>Create a new model version in model registry for the model files specified by model_uri.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_uri</strong> (<em>str</em>) – Uri of the model to register.</p></li>
+<li><p><strong>model_name</strong> (<em>str</em>) – Name of the registered model under which to create a new model version.</p></li>
+<li><p><strong>timeout_s</strong> (<em>int</em>) – Maximum number of seconds to wait for the model version to finish being created.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>(ModelVersion)</em> The ModelVersion object created, corresponding to the model registered.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.ml_flower.MLFlower.set_model_tag">
+<span class="sig-name descname"><span class="pre">set_model_tag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_version_details</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">mlflow.entities.model_registry.model_version.ModelVersion</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tag_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tag_value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#kronos.ml_flower.MLFlower.set_model_tag" title="Permalink to this definition"></a></dt>
+<dd><p>Set a tag for a specific model version.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_version_details</strong> (<em>ModelVersion</em>) – Registered model version details.</p></li>
+<li><p><strong>tag_key</strong> (<em>str</em>) – Tag key to log.</p></li>
+<li><p><strong>tag_value</strong> (<em>str</em>) – Tag value to log.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>No return.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kronos.ml_flower.MLFlower.start_run">
+<span class="sig-name descname"><span class="pre">start_run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">run_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">mlflow.tracking.fluent.ActiveRun</span></span></span><a class="headerlink" href="#kronos.ml_flower.MLFlower.start_run" title="Permalink to this definition"></a></dt>
+<dd><p>Start a new MLflow run with a specific run name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>run_name</strong> (<em>str</em>) – Name of the run to start.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>(mlflow.ActiveRun)</em> object that acts as a context manager wrapping the run’s state.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modeler.html" class="btn btn-neutral float-left" title="modeler module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="krns_prophet.html" class="btn btn-neutral float-right" title="krns_prophet module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, zantedeschim.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

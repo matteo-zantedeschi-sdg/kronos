@@ -1,0 +1,18 @@
+trigger:
+  tags:
+    include:
+    - release
+
+steps:
+- script: |
+     pip install wheel
+     pip install twine
+
+- script: |
+     python setup.py bdist_wheel
+
+- task: TwineAuthenticate@1
+  inputs:
+    artifactFeed: '2020_B065 – SIRIS GAS/siris'
+- script: |
+     python -m twine upload --verbose -r siris --config-file $(PYPIRC_PATH) dist/*.whl

@@ -10,12 +10,12 @@ logger = logging.getLogger(__name__)
 
 class KRNSProphet:
     """
-    # TODO: Doc
+    Class to implement Prophet in kronos.
     """
 
     def __init__(
         self,
-        key_column: str,
+        key_col: str,
         date_col: str,
         metric_col: str,
         fcst_col: str,
@@ -31,9 +31,56 @@ class KRNSProphet:
         cap: int = None,
         country_holidays: str = "IT",
         model: Prophet = None,
-    ):
+    ) -> None:
+        """
+        Initialization method.
+
+        :param str key_col: The name of the column indicating the time series key.
+        :param str date_col: The name of the column indicating the time dimension.
+        :param str metric_col: The name of the column indicating the dimension to forecast.
+        :param str fcst_col: The name of the column indication the forecast.
+        :param pd.DataFrame train_data: Pandas DataFrame with the training data.
+        :param pd.DataFrame test_data: Pandas DataFrame with the test data.
+        :param float interval_width: Width of the uncertainty intervals provided for the forecast.
+        :param str growth: String ’linear’, ’logistic’, or ’flat’ to specify a linear, logistic or flat trend.
+        :param bool daily_seasonality: Fit daily seasonality.
+        :param bool weekly_seasonality: Fit weekly seasonality.
+        :param bool yearly_seasonality: Fit yearly seasonality.
+        :param str seasonality_mode: One among 'additive' (default) or 'multiplicative'.
+        :param int floor: The saturating minimum of the time-series to forecast.
+        :param int cap: The saturating maximum  of the time-series to forecast.
+        :param str country_holidays: Name of the country to add holidays for.
+        :param Prophet model: An already fitted Prophet model, to instantiate a kronos Prophet from an already fitted model.
+
+        :return: No return.
+
+        **Example**
+
+        .. code-block:: python
+
+            krns_model = KRNSProphet(
+                    train_data=df_train,
+                    test_data=df_test,
+                    key_col='id',
+                    date_col='date',
+                    metric_col='y',
+                    fcst_col='y_hat',
+                    interval_width=0.95,
+                    growth='logistic',
+                    daily_seasonality=False,
+                    weekly_seasonality=True,
+                    yearly_seasonality=True,
+                    seasonality_mode='multiplicative',
+                    floor=0,
+                    cap=9999999999999,
+                    country_holidays='IT',
+                    model=None,
+                )
+
+        """
+
         # Kronos attributes
-        self.key_column = key_column
+        self.key_col = key_col
         self.date_col = date_col
         self.metric_col = metric_col
         self.fcst_col = fcst_col
@@ -87,9 +134,10 @@ class KRNSProphet:
             "country_holidays": self.country_holidays,
         }
 
-    def preprocess(self):
+    def preprocess(self) -> None:
         """
-        Get the dataframe into the condition to be processed by the model.
+        Get the dataframe into the condition to be processed by the model: renaming columns with date as 'ds' and with metric as 'y'.
+
         :return: No return.
         """
 
@@ -111,9 +159,14 @@ class KRNSProphet:
                 f"### Preprocess test data failed: {e} - {self.test_data.head(1)}"
             )
 
-    def log_params(self, client: MlflowClient, run_id: str):
+    def log_params(self, client: MlflowClient, run_id: str) -> None:
         """
-        # TODO: Doc
+        Log the model params to mlflow.
+
+        :param MlflowClient client: The mlflow client used to log parameters.
+        :param str run_id: The run id under which log parameters.
+
+        :return: No return.
         """
         try:
             for key, val in self.model_params.items():
@@ -121,21 +174,33 @@ class KRNSProphet:
         except Exception as e:
             logger.error(f"### Log params {self.model_params} failed: {e}")
 
-    def log_model(self, artifact_path: str):
+    def log_model(self, artifact_path: str) -> None:
         """
-        TODO: Doc
+        Log the model artifact to mlflow.
+
+        :param str artifact_path: Run-relative artifact path.
+
+        :return: No return.
         """
         try:
-            # Get the model signature and log the model
-            # signature = infer_signature(train_data, krns_prophet.predict(n_days=n_test))
-            # TODO: Signature da aggiungere in futuro, e capire quale
+            # TODO: Signature to add before log the model
             mlflow.prophet.log_model(pr_model=self.model, artifact_path=artifact_path)
             logger.info(f"### Model logged: {self.model}")
 
         except Exception as e:
             logger.error(f"### Log model {self.model} failed: {e}")
 
-    def fit(self):
+    def fit(self) -> None:
+        """
+        Fit the model:
+            1. Instantiate the model class.
+            2. Add floor/cap to train data.
+            3. Add country holidays.
+            4. Fit the model.
+            5. Remove floor/cap columns from train data.
+
+        :return: No return.
+        """
 
         try:
             # Define the model
@@ -168,7 +233,14 @@ class KRNSProphet:
 
     def predict(
         self, n_days: int, fcst_first_date: datetime.date = datetime.date.today()
-    ):
+    ) -> pd.DataFrame:
+        """
+
+        :param int n_days: Number of data points to predict.
+        :param datetime.date fcst_first_date: First date of forecast.
+
+        :return: *(pd.DataFrame)* Pandas DataFrame containing the predictions.
+        """
 
         try:
             # Compute difference from last date in the model and first date of forecast
@@ -194,7 +266,7 @@ class KRNSProphet:
             pred = pred[pred["ds"] >= fcst_first_date]
 
             # Rename columns
-            pred.rename(columns={"ds": self.date_col, "y": self.fcst_col}, inplace=True)
+            pred.rename(columns={"ds": self.date_col, "yhat": self.fcst_col}, inplace=True)
 
             return pred
 

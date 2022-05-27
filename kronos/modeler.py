@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class Modeler:
     """
-    TODO: Doc
+    Class to manage all modelling activities.
     """
 
     def __init__(
@@ -31,9 +31,52 @@ class Modeler:
         fcst_horizon: int,
         dt_creation_col: str,
         dt_reference_col: str,
-    ):
+    ) -> None:
         """
-        TODO: Doc
+        Initialization method.
+
+        Other than init attributes, the *key_code* and *max_value* attributes are extracted from data: the first is used to name different objects (e.g. name of the mlflow experiment); the second to set a cap in the training of certain models.
+
+        :param MLFlower ml_flower: The MLFlower instance used to interact with mlflow.
+        :param pd.DataFrame data: The pandas DataFrame containing all the information.
+        :param str key_col: The name of the column indicating the time series key.
+        :param str date_col: The name of the column indicating the time dimension.
+        :param str metric_col: The name of the column indicating the dimension to forecast.
+        :param str fcst_col: The name of the column indication the forecast.
+        :param dict models_config: The dict containing all the model configurations.
+        :param str days_from_last_obs_col: The name of the column indicating the days since the last available observation in the time series.
+        :param datetime.date current_date: Current processing date.
+        :param datetime.date fcst_first_date: Date of first day of forecast, usually is the day following the current date.
+        :param int n_test: Number of observations to use as test set.
+        :param int n_unit_test: Number of points to forecast in the model deployment's unit test.
+        :param int fcst_horizon: Number of points to forecast.
+        :param str dt_creation_col: The name of the column indicating the forecast creation date.
+        :param str dt_reference_col: The name of the column indicating the date used as reference date for forecast.
+
+        :return: No return.
+
+        **Example**
+
+        .. code-block:: python
+
+            modeler = Modeler(
+                    client=MLFlower(client=client),
+                    data=df,
+                    key_col='id',
+                    date_col='date',
+                    metric_col='y',
+                    fcst_col='y_hat',
+                    models_config={"pmdarima_1":{"model_flavor":"pmdarima","m":7,"seasonal":true}},
+                    days_from_last_obs_col='days_from_last_obs',
+                    current_date=(date.today() + timedelta(-1)).strftime('%Y-%m-%d'),
+                    fcst_first_date=date.today().strftime('%Y-%m-%d'),
+                    n_test=7,
+                    n_unit_test=7,
+                    fcst_horizon=7,
+                    dt_creation_col='creation_date',
+                    dt_reference_col='reference_date'
+                )
+
         """
 
         # Input attributes
@@ -60,20 +103,23 @@ class Modeler:
         # Empty/placeholder attributes
         self.train_data = None
         self.test_data = None
-        # TODO: Deve essere basato sulle metriche specificate dall'utente
+        # TODO: Should be based on all the metrics specified by the user.
         self.df_performances = pd.DataFrame(
             columns=["model_name", "rmse", "model_config", "model", "run_id"]
         ).set_index("model_name")
         self.winning_model_name = None
 
     @staticmethod
-    def evaluate_model(actual: np.ndarray, pred: np.ndarray, metrics: list):
+    def evaluate_model(actual: np.ndarray, pred: np.ndarray, metrics: list) -> dict:
         """
-        # TODO: Doc
-        :param actual:
-        :param pred:
-        :param metrics:
-        :return:
+        A static method which computes a list of metrics with which to evaluate the model's predictions.
+        Currently supported metrics are: rmse, mape.
+
+        :param np.ndarray actual: Array containing the actual data.
+        :param np.ndarray pred: Array containing the predicted data.
+        :param list metrics: List of metrics (as strings) to compute.
+
+        :return: *(dict)* A dictionary containing all metric names as keys and their computed values as values.
         """
 
         supported_metrics = ["rmse", "mape"]
@@ -105,10 +151,11 @@ class Modeler:
 
         return out
 
-    def train_test_split(self):
+    def train_test_split(self) -> None:
         """
-        TODO: Doc
-        :return:
+        A method to split data into train/test splits.
+
+        :return: No return.
         """
 
         logger.debug("### Performing train/test split.")
@@ -129,9 +176,25 @@ class Modeler:
             ).iloc[: self.n_test, :]
             logger.debug("### Train/test split completed.")
 
-    def training(self):
+    def training(self) -> None:
         """
-        # TODO: Doc
+        A method to perform all the training activities:
+
+            1. Define an mlflow experiment.
+            2. Perform train/test split of data.
+            3. Init all kronos models to train and store them in a dictionary.
+            4. For each model to train:
+
+                1. Start an mlflow run.
+                2. Preprocess data (*e.g. renaming columns in prophet models*).
+                3. Log model params in the mlflow run.
+                4. Fit the model.
+                5. Log the fitted model as artifact in the mlflow run.
+                6. Compute evaluation metrics and add them in a *performance dataframe* (to later compare models).
+                7. Log metrics in the mlflow run.
+                8. End run.
+
+        :return: No return.
         """
 
         try:
@@ -175,16 +238,15 @@ class Modeler:
                     )
 
                     # Compute rmse and mape
-                    # TODO: Andranno calcolate anche eventuali metriche aggiuntive - lette da una tabella parametrica
-                    # TODO: yhat è tipica di prophet o dei nostri krns models, da generalizzare o da inserire come parametro nei krns models
+                    # TODO: Should be computed all the metrics specified by the user.
                     train_evals = self.evaluate_model(
                         actual=self.test_data[self.metric_col].values,
                         pred=pred[self.fcst_col].values,
                         metrics=["rmse", "mape"],
                     )
 
-                    # TODO: All'interno di questo df ci dovranno essere n metriche di confronto (definite tramite cockpit dall'utente).
-                    #  Il dataframe a questo punto potrebbe essere generato da un dizionario dinamico con le n metriche.
+                    # TODO: Within this dataframe there must be n comparison metrics (defined via cockpit by the user).
+                    #  The dataframe could be generated from a dynamic dictionary with the n metrics.
                     self.df_performances.loc[model_name] = [
                         train_evals["rmse"],
                         self.models_config[model_name],
@@ -192,7 +254,6 @@ class Modeler:
                         run_id,
                     ]
 
-                    # TODO: Forse da internalizzare a MLFlower
                     for key, val in train_evals.items():
                         self.ml_flower.client.log_metric(run_id, key, val)
 
@@ -205,9 +266,12 @@ class Modeler:
         except Exception as e:
             logger.error(f"### Training failed: {e}")
 
-    def prod_model_eval(self):
+    def prod_model_eval(self) -> None:
         """
-        TODO: Doc
+        Method used to retrieve the current production model from mlflow Model Registry.
+        The model is used to predict on test set and compute evaluation metrics.
+
+        :return: No return.
         """
 
         try:
@@ -228,7 +292,7 @@ class Modeler:
             )
 
             # Compute rmse
-            # TODO: Andranno calcolate anche eventuali metriche aggiuntive
+            # TODO: Should be computed all the metrics specified by the user.
             prod_rmse = self.evaluate_model(
                 actual=self.test_data[self.metric_col].values,
                 pred=pred[self.fcst_col].values,
@@ -244,13 +308,16 @@ class Modeler:
         except Exception as e:
             logger.warning(f"### Prod model prediction failed: {e}")
 
-    def competition(self):
+    def competition(self) -> None:
         """
-        # TODO: Doc
+        Method used to find the best available model among those trained and the one currently in production.
+        A score is computed combining several metrics: the model associated with the maximum score is the winning one.
+
+        :return: No return.
         """
 
         # Compute final score and compare
-        # TODO: Dovrà essere la somma di tutte le metriche con cui si vogliono confrontare i modelli
+        # TODO: Should be the combination of all metrics specified by the user.
         try:
             self.df_performances["score"] = self.df_performances["rmse"].apply(
                 lambda x: -x
@@ -261,10 +328,16 @@ class Modeler:
         except Exception as e:
             logger.error(f"### Competition failed: {e}")
 
-    def unit_test(self, model_version_name: str, model_version_stage: str):
+    def unit_test(self, model_version_name: str, model_version_stage: str) -> str:
         """
-        # TODO: Doc
-        :return:
+        Method to perform an infrastructure unit test on a mlflow model.
+        The model is first retrieved from the mlflow Model Registry, then it is used to predict n data points.
+        If the number of output predictions matches the number of predictions required then the test result is *OK*, otherwise *KO*.
+
+        :param str model_version_name: The name of the model to test.
+        :param str model_version_stage: The stage of the model to test.
+
+        :return: *(str)* The unit test status: 'OK' or 'KO'.
         """
         try:
             logger.info("### Performing model unit test")
@@ -291,9 +364,18 @@ class Modeler:
                 f"Unit test of model {model_version_name} in stage {model_version_stage} failed: {e}"
             )
 
-    def deploy(self):
+    def deploy(self) -> None:
         """
-        # TODO: Doc
+        Method to perform the winning model deploy into the mlflow Model Registry.
+        The main steps are:
+
+            1. Register the mlflow run artifact model into the mlflow Model Registry.
+            2. Set the model flavor as tag of the model, for information purposes only (not required by mlflow).
+            3. Promote the model to the "Staging" stage of the mlflow Model Registry.
+            4. Perform the model unit test.
+            5. If the unit test succeed, promote the model to the "Production" stage of the mlflow Model Registry.
+
+        :return: No return.
         """
         try:
             # Get winning model run id
@@ -353,9 +435,13 @@ class Modeler:
                 f"### Deployment of model {self.winning_model_name} failed: {e}"
             )
 
-    def prediction(self):
+    def prediction(self) -> pd.DataFrame:
         """
-        # TODO: Doc
+        Method to perform prediction using an mlflow model.
+        The model is retrieved from the "Production" stage of the mlflow Model Registry, then it is used to provide the predictions.
+        Finally, informative columns are added (e.g. days from last execution) and negative predictions are removed.
+
+        :return: *(pd.DataFrame)* Pandas DataFrame containing the predictions.
         """
 
         try:
@@ -413,10 +499,13 @@ class Modeler:
 
         return pred
 
-    def create_all_models(self, models_config: dict):
+    def create_all_models(self, models_config: dict) -> dict:
         """
-        # TODO: Doc
-        :return:
+        Method to instantiate all the kronos models.
+
+        :param dict models_config: The dict containing all the model configurations.
+
+        :return: *(dict)* The list with all the instances of kronos models.
         """
 
         # For each model config create its instance
@@ -434,17 +523,19 @@ class Modeler:
         self, model_flavor: str, model_config: dict, trained_model: None
     ):
         """
-        # TODO: DOC
-        :param model_flavor:
-        :param model_config:
-        :param trained_model:
-        :return:
+        Method to instantiate a single kronos models.
+
+        :param str model_flavor: The flavor of the model (e.g. 'prophet').
+        :param dict model_config: The dict containing all the model configurations.
+        :param trained_model: An already fitted model. To instantiate a kronos model from an already fitted model.
+
+        :return: The kronos model instantiated.
         """
         if model_flavor == "prophet":
             model = KRNSProphet(
                 train_data=self.train_data,
                 test_data=self.test_data,
-                key_column=self.key_col,
+                key_col=self.key_col,
                 date_col=self.date_col,
                 metric_col=self.metric_col,
                 fcst_col=self.fcst_col,
@@ -463,7 +554,7 @@ class Modeler:
             model = KRNSPmdarima(
                 train_data=self.train_data,
                 test_data=self.test_data,
-                key_column=self.key_col,
+                key_col=self.key_col,
                 date_col=self.date_col,
                 metric_col=self.metric_col,
                 fcst_col=self.fcst_col,
