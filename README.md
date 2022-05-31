@@ -83,6 +83,7 @@ forecast_udf = forecast_udf_gen(
     key_col=key_col, 
     date_col=date_col, 
     metric_col=metric_col,
+    fcst_col=fcst_col,
     quality_col=quality_col,
     action_col=action_col,
     models_col=models_col,
@@ -94,7 +95,9 @@ forecast_udf = forecast_udf_gen(
     n_unit_test=n_unit_test, 
     fcst_horizon=fcst_horizon,
     dt_creation_col=dt_creation_col,
-    dt_reference_col=dt_reference_col
+    dt_reference_col=dt_reference_col,
+    fcst_competition_metrics=fcst_competition_metrics,
+    fcst_competition_metric_weights=fcst_competition_metric_weights
 )
 ```
 

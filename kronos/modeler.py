@@ -14,6 +14,9 @@ class Modeler:
     Class to manage all modelling activities.
     """
 
+    # TODO: fcst_competition_metric_weights è associato alle metriche su base posizionale, sarebbe meglio su base
+    #  del nome, tipo un dizionario
+
     def __init__(
         self,
         ml_flower: MLFlower,
@@ -31,6 +34,8 @@ class Modeler:
         fcst_horizon: int,
         dt_creation_col: str,
         dt_reference_col: str,
+        fcst_competition_metrics: list,
+        fcst_competition_metric_weights: list,
     ) -> None:
         """
         Initialization method.
@@ -52,6 +57,8 @@ class Modeler:
         :param int fcst_horizon: Number of points to forecast.
         :param str dt_creation_col: The name of the column indicating the forecast creation date.
         :param str dt_reference_col: The name of the column indicating the date used as reference date for forecast.
+        :param list fcst_competition_metrics: List of metrics to be used in the competition.
+        :param list fcst_competition_metric_weights: List of weights for metrics to be used in the competition.
 
         :return: No return.
 
@@ -74,7 +81,9 @@ class Modeler:
                     n_unit_test=7,
                     fcst_horizon=7,
                     dt_creation_col='creation_date',
-                    dt_reference_col='reference_date'
+                    dt_reference_col='reference_date',
+                    fcst_competition_metrics=['rmse', 'mape'],
+                    fcst_competition_metric_weights=[0.5, 0.5]
                 )
 
         """
@@ -95,6 +104,8 @@ class Modeler:
         self.fcst_horizon = fcst_horizon
         self.dt_creation_col = dt_creation_col
         self.dt_reference_col = dt_reference_col
+        self.fcst_competition_metrics = fcst_competition_metrics
+        self.fcst_competition_metric_weights = fcst_competition_metric_weights
 
         # Defined attributes
         self.key_code = str(self.data[self.key_col].iloc[0])
@@ -103,9 +114,9 @@ class Modeler:
         # Empty/placeholder attributes
         self.train_data = None
         self.test_data = None
-        # TODO: Should be based on all the metrics specified by the user.
         self.df_performances = pd.DataFrame(
-            columns=["model_name", "rmse", "model_config", "model", "run_id"]
+            columns=["model_name", "model_config", "model", "run_id"]
+            + self.fcst_competition_metrics
         ).set_index("model_name")
         self.winning_model_name = None
 
@@ -240,21 +251,19 @@ class Modeler:
                     )
 
                     # Compute rmse and mape
-                    # TODO: Should be computed all the metrics specified by the user.
                     train_evals = self.evaluate_model(
                         actual=self.test_data[self.metric_col].values,
                         pred=pred[self.fcst_col].values,
-                        metrics=["rmse", "mape"],
+                        metrics=self.fcst_competition_metrics,
                     )
 
-                    # TODO: Within this dataframe there must be n comparison metrics (defined via cockpit by the user).
-                    #  The dataframe could be generated from a dynamic dictionary with the n metrics.
+                    # TODO: DF Performance si popola in modo posizionale, sarebbe meglio se si popolasse
+                    #  tramite un dizionario mantenendo comunque l'indice
                     self.df_performances.loc[model_name] = [
-                        train_evals["rmse"],
                         self.models_config[model_name],
                         model,
                         run_id,
-                    ]
+                    ] + list(train_evals.values())
 
                     for key, val in train_evals.items():
                         self.ml_flower.client.log_metric(run_id, key, val)
@@ -294,18 +303,16 @@ class Modeler:
             )
 
             # Compute rmse
-            # TODO: Should be computed all the metrics specified by the user.
-            prod_rmse = self.evaluate_model(
+            prod_evals = self.evaluate_model(
                 actual=self.test_data[self.metric_col].values,
                 pred=pred[self.fcst_col].values,
-                metrics=["rmse"],
+                metrics=self.fcst_competition_metrics,
             )
             self.df_performances.loc["prod_model"] = [
-                prod_rmse["rmse"],
                 None,
                 krns_model,
                 None,
-            ]
+            ] + list(prod_evals.values())
 
         except Exception as e:
             logger.warning(f"### Prod model prediction failed: {e}")
@@ -313,19 +320,45 @@ class Modeler:
     def competition(self) -> None:
         """
         Method used to find the best available model among those trained and the one currently in production.
-        A score is computed combining several metrics: the model associated with the maximum score is the winning one.
+        The weighted average of all metric errors is computed: the model associated with the minimum value is the winning one.
 
         :return: No return.
         """
 
-        # Compute final score and compare
-        # TODO: Should be the combination of all metrics specified by the user.
+        # Compute average error and compare
         try:
-            self.df_performances["score"] = self.df_performances["rmse"].apply(
-                lambda x: -x
+            # Standardize all metric columns
+            for metric in self.fcst_competition_metrics:
+                mean, std = (
+                    self.df_performances[metric].mean(),
+                    self.df_performances[metric].std(),
+                )
+                self.df_performances[metric] = self.df_performances[metric].apply(
+                    lambda x: x - mean / std
+                )
+
+            # Compute weighted average of all metrics
+            self.df_performances["error_avg"] = self.df_performances.apply(
+                lambda x: (
+                    (
+                        (
+                            np.array(
+                                [
+                                    x[_metric]
+                                    for _metric in self.fcst_competition_metrics
+                                ]
+                            )
+                            * np.array(self.fcst_competition_metric_weights)
+                        ).sum()
+                    )
+                    / np.array(self.fcst_competition_metric_weights).sum()
+                ),
+                axis=1,
             )
+
+            # Find winning model, i.e. the one with the minimum error_avg
             self.winning_model_name = self.df_performances.iloc[
-                self.df_performances["score"].argmax()
+                self.df_performances["error_avg"].argmin()
             ].name
         except Exception as e:
             logger.error(f"### Competition failed: {e}")

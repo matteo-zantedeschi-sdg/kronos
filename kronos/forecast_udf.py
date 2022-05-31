@@ -4,7 +4,6 @@ from mlflow.tracking import MlflowClient
 import pandas as pd
 import datetime
 import logging
-import json
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +17,7 @@ def forecast_udf_gen(
     quality_col: str,
     action_col: str,
     models_col: str,
-    models_config: str,
+    models_config: dict,
     days_from_last_obs_col: str,
     current_date: datetime.date,
     fcst_first_date: datetime.date,
@@ -27,6 +26,8 @@ def forecast_udf_gen(
     fcst_horizon: int,
     dt_creation_col: str,
     dt_reference_col: str,
+    fcst_competition_metrics: list,
+    fcst_competition_metric_weights: list,
 ):
     """
     A function used to create a pandas User Defined Function (UDF) with the specified parameters.
@@ -42,7 +43,7 @@ def forecast_udf_gen(
         * "training": Retraining the currently production model.
         * "predict": Use the production model to predict.
     :param str models_col: The name of the column indicating the models for competition.
-    :param str models_config: The string (in json format) containing all the model configurations.
+    :param dict models_config: The dict containing all the model configurations.
     :param str days_from_last_obs_col: The name of the column indicating the days since the last available observation in the time series.
     :param datetime.date current_date: Current processing date.
     :param datetime.date fcst_first_date: Date of first day of forecast, usually is the day following the current date.
@@ -51,6 +52,8 @@ def forecast_udf_gen(
     :param int fcst_horizon: Number of points to forecast.
     :param str dt_creation_col: The name of the column indicating the forecast creation date.
     :param str dt_reference_col: The name of the column indicating the date used as reference date for forecast.
+    :param list fcst_competition_metrics: List of metrics to be used in the competition.
+    :param list fcst_competition_metric_weights: List of weights for metrics to be used in the competition.
 
     :return: A pandas UDF with the specified parameters as arguments.
 
@@ -67,7 +70,7 @@ def forecast_udf_gen(
                 quality_col='quality',
                 action_col='action',
                 models_col='models',
-                models_config='{"pmdarima_1":{"model_flavor":"pmdarima","m":7,"seasonal":true}}',
+                models_config={"pmdarima_1":{"model_flavor":"pmdarima","m":7,"seasonal":true}},
                 days_from_last_obs_col='days_from_last_obs',
                 current_date=(date.today() + timedelta(-1)).strftime('%Y-%m-%d'),
                 fcst_first_date=date.today().strftime('%Y-%m-%d'),
@@ -75,7 +78,9 @@ def forecast_udf_gen(
                 n_unit_test=7,
                 fcst_horizon=7,
                 dt_creation_col='creation_date',
-                dt_reference_col='reference_date'
+                dt_reference_col='reference_date',
+                fcst_competition_metrics=['rmse', 'mape'],
+                fcst_competition_metric_weights=[0.5, 0.5]
             )
 
     """
@@ -120,7 +125,7 @@ def forecast_udf_gen(
             date_col=date_col,
             metric_col=metric_col,
             fcst_col=fcst_col,
-            models_config=json.loads(models_config),
+            models_config=models_config,
             days_from_last_obs_col=days_from_last_obs_col,
             current_date=current_date,
             fcst_first_date=fcst_first_date,
@@ -129,6 +134,8 @@ def forecast_udf_gen(
             fcst_horizon=fcst_horizon,
             dt_creation_col=dt_creation_col,
             dt_reference_col=dt_reference_col,
+            fcst_competition_metrics=fcst_competition_metrics,
+            fcst_competition_metric_weights=fcst_competition_metric_weights,
         )
 
         # TRAINING #####
