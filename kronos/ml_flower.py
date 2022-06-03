@@ -80,6 +80,8 @@ class MLFlower:
                 model = mlflow.prophet.load_model(model_uri)
             elif loader_module == "mlflow.pmdarima":
                 model = mlflow.pmdarima.load_model(model_uri)
+            elif loader_module == "mlflow.tensorflow":
+                model = mlflow.tensorflow.load_model(model_uri)
             else:
                 raise Exception("Model flavor not supported")
 

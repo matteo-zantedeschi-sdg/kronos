@@ -1,5 +1,6 @@
 from prophet import Prophet
 from mlflow.tracking import MlflowClient
+import copy
 import pandas as pd
 import logging
 import mlflow
@@ -15,12 +16,7 @@ class KRNSProphet:
 
     def __init__(
         self,
-        key_col: str,
-        date_col: str,
-        metric_col: str,
-        fcst_col: str,
-        train_data: pd.DataFrame = pd.DataFrame(),
-        test_data: pd.DataFrame = pd.DataFrame(),
+        modeler,  # TODO: How to explicit its data type without incur in [...] most likely due to a circular import
         interval_width: float = 0.95,
         growth: str = "linear",
         daily_seasonality: bool = False,
@@ -35,12 +31,7 @@ class KRNSProphet:
         """
         Initialization method.
 
-        :param str key_col: The name of the column indicating the time series key.
-        :param str date_col: The name of the column indicating the time dimension.
-        :param str metric_col: The name of the column indicating the dimension to forecast.
-        :param str fcst_col: The name of the column indication the forecast.
-        :param pd.DataFrame train_data: Pandas DataFrame with the training data.
-        :param pd.DataFrame test_data: Pandas DataFrame with the test data.
+        :param Modeler modeler: The Modeler instance used to interact with data.
         :param float interval_width: Width of the uncertainty intervals provided for the forecast.
         :param str growth: String ’linear’, ’logistic’, or ’flat’ to specify a linear, logistic or flat trend.
         :param bool daily_seasonality: Fit daily seasonality.
@@ -59,12 +50,7 @@ class KRNSProphet:
         .. code-block:: python
 
             krns_model = KRNSProphet(
-                    train_data=df_train,
-                    test_data=df_test,
-                    key_col='id',
-                    date_col='date',
-                    metric_col='y',
-                    fcst_col='y_hat',
+                    modeler=modeler,
                     interval_width=0.95,
                     growth='logistic',
                     daily_seasonality=False,
@@ -80,12 +66,7 @@ class KRNSProphet:
         """
 
         # Kronos attributes
-        self.key_col = key_col
-        self.date_col = date_col
-        self.metric_col = metric_col
-        self.fcst_col = fcst_col
-        self.train_data = train_data.copy()
-        self.test_data = test_data.copy()
+        self.modeler = copy.deepcopy(modeler)
 
         # Model attributes
         self.interval_width = interval_width if not model else model.interval_width
@@ -111,15 +92,17 @@ class KRNSProphet:
             self.floor = floor
         else:
             self.floor = (
-                train_data[metric_col].min() / 10 if train_data.shape[0] > 0 else 0
+                self.modeler.train_data[self.modeler.metric_col].min() / 10
+                if self.modeler.train_data.shape[0] > 0
+                else 0
             )
 
         if cap:
             self.cap = cap
         else:
             self.cap = (
-                train_data[metric_col].max() * 10
-                if train_data.shape[0] > 0
+                self.modeler.train_data[self.modeler.metric_col].max() * 10
+                if self.modeler.train_data.shape[0] > 0
                 else 1000000000000000000
             )
 
@@ -146,21 +129,33 @@ class KRNSProphet:
         """
 
         try:
-            self.train_data.rename(
-                columns={self.date_col: "ds", self.metric_col: "y"}, inplace=True
+            self.modeler.data.rename(
+                columns={self.modeler.date_col: "ds", self.modeler.metric_col: "y"},
+                inplace=True,
             )
         except Exception as e:
             logger.warning(
-                f"### Preprocess train data failed: {e} - {self.train_data.head(1)}"
+                f"### Preprocess data failed: {e} - {self.modeler.data.head(1)}"
             )
 
         try:
-            self.test_data.rename(
-                columns={self.date_col: "ds", self.metric_col: "y"}, inplace=True
+            self.modeler.train_data.rename(
+                columns={self.modeler.date_col: "ds", self.modeler.metric_col: "y"},
+                inplace=True,
             )
         except Exception as e:
             logger.warning(
-                f"### Preprocess test data failed: {e} - {self.test_data.head(1)}"
+                f"### Preprocess train data failed: {e} - {self.modeler.train_data.head(1)}"
+            )
+
+        try:
+            self.modeler.test_data.rename(
+                columns={self.modeler.date_col: "ds", self.modeler.metric_col: "y"},
+                inplace=True,
+            )
+        except Exception as e:
+            logger.warning(
+                f"### Preprocess test data failed: {e} - {self.modeler.test_data.head(1)}"
             )
 
     def log_params(self, client: MlflowClient, run_id: str) -> None:
@@ -218,21 +213,21 @@ class KRNSProphet:
             )
 
             # Add floor and cap
-            self.train_data["floor"] = self.floor
-            self.train_data["cap"] = self.cap
+            self.modeler.train_data["floor"] = self.floor
+            self.modeler.train_data["cap"] = self.cap
 
             # Add country holidays
             self.model.add_country_holidays(country_name=self.country_holidays)
 
             # Fit the model
-            self.model.fit(self.train_data)
+            self.model.fit(self.modeler.train_data)
 
             # Remove floor and cap
-            self.train_data.drop(["floor", "cap"], axis=1, inplace=True)
+            self.modeler.train_data.drop(["floor", "cap"], axis=1, inplace=True)
 
         except Exception as e:
             logger.error(
-                f"### Fit with model {self.model} failed: {e} - on data {self.train_data.head(1)}"
+                f"### Fit with model {self.model} failed: {e} - on data {self.modeler.train_data.head(1)}"
             )
 
     def predict(
@@ -251,9 +246,12 @@ class KRNSProphet:
             model_last_date = self.model.history_dates[0].date()
             difference = (fcst_first_date - model_last_date).days
 
+            # Compute actual forecast horizon
+            fcst_horizon = difference + n_days - 1
+
             # configure predictions
             pred_config = self.model.make_future_dataframe(
-                periods=difference + n_days - 1, freq="d", include_history=False
+                periods=fcst_horizon, freq="d", include_history=False
             )
 
             # Add floor and cap
@@ -271,7 +269,8 @@ class KRNSProphet:
 
             # Rename columns
             pred.rename(
-                columns={"ds": self.date_col, "yhat": self.fcst_col}, inplace=True
+                columns={"ds": self.modeler.date_col, "yhat": self.modeler.fcst_col},
+                inplace=True,
             )
 
             return pred

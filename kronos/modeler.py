@@ -1,6 +1,9 @@
-from kronos.ml_flower import MLFlower
 from kronos.models.krns_prophet import KRNSProphet
 from kronos.models.krns_pmdarima import KRNSPmdarima
+from kronos.models.tensorflow.krns_gru import KRNSGRU
+from kronos.models.tensorflow.krns_lstm import KRNSLSTM
+from kronos.models.tensorflow.krns_simple_rnn import KRNSSimpleRNN
+from kronos.ml_flower import MLFlower
 import pandas as pd
 import numpy as np
 import logging
@@ -241,11 +244,7 @@ class Modeler:
                     model.log_model(artifact_path="model")
 
                     # Make predictions
-                    test_data_first_date = (
-                        self.test_data[self.date_col]
-                        .sort_values(ascending=True)
-                        .iloc[0]
-                    )
+                    test_data_first_date = self.test_data[self.date_col].min()
                     pred = model.predict(
                         n_days=self.n_test, fcst_first_date=test_data_first_date
                     )
@@ -568,12 +567,7 @@ class Modeler:
         """
         if model_flavor == "prophet":
             model = KRNSProphet(
-                train_data=self.train_data,
-                test_data=self.test_data,
-                key_col=self.key_col,
-                date_col=self.date_col,
-                metric_col=self.metric_col,
-                fcst_col=self.fcst_col,
+                modeler=self,
                 interval_width=model_config.get("interval_width"),
                 growth=model_config.get("growth"),
                 daily_seasonality=model_config.get("daily_seasonality"),
@@ -587,15 +581,34 @@ class Modeler:
             )
         elif model_flavor == "pmdarima":
             model = KRNSPmdarima(
-                train_data=self.train_data,
-                test_data=self.test_data,
-                key_col=self.key_col,
-                date_col=self.date_col,
-                metric_col=self.metric_col,
-                fcst_col=self.fcst_col,
+                modeler=self,
                 m=model_config.get("m"),
                 seasonal=model_config.get("seasonal"),
                 model=trained_model,
+            )
+        elif model_flavor == "tfrnn":
+            model = KRNSSimpleRNN(
+                modeler=self,
+                n_units=model_config.get("n_units"),
+                activation=model_config.get("activation"),
+                epochs=model_config.get("epochs"),
+                n_inputs=model_config.get("n_inputs"),
+            )
+        elif model_flavor == "tfgru":
+            model = KRNSGRU(
+                modeler=self,
+                n_units=model_config.get("n_units"),
+                activation=model_config.get("activation"),
+                epochs=model_config.get("epochs"),
+                n_inputs=model_config.get("n_inputs"),
+            )
+        elif model_flavor == "tflstm":
+            model = KRNSLSTM(
+                modeler=self,
+                n_units=model_config.get("n_units"),
+                activation=model_config.get("activation"),
+                epochs=model_config.get("epochs"),
+                n_inputs=model_config.get("n_inputs"),
             )
         else:
             raise ValueError(f"Model {model_flavor} not supported.")

@@ -15,6 +15,9 @@ Welcome to kronos's documentation!
    ml_flower
    krns_prophet
    krns_pmdarima
+   krns_simple_rnn
+   krns_lstm
+   krns_gru
 
 Indices and tables
 ==================

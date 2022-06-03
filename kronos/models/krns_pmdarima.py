@@ -1,4 +1,5 @@
 from mlflow.tracking import MlflowClient
+import copy
 import pmdarima as pm
 import pandas as pd
 import logging
@@ -15,12 +16,7 @@ class KRNSPmdarima:
 
     def __init__(
         self,
-        key_col: str,
-        date_col: str,
-        metric_col: str,
-        fcst_col: str,
-        train_data: pd.DataFrame = pd.DataFrame(),
-        test_data: pd.DataFrame = pd.DataFrame(),
+        modeler,  # TODO: How to explicit its data type without incur in [...] most likely due to a circular import
         model: pm.arima.arima.ARIMA = None,
         m: int = 7,
         seasonal: bool = True,
@@ -28,12 +24,7 @@ class KRNSPmdarima:
         """
         Initialization method.
 
-        :param str key_col: The name of the column indicating the time series key.
-        :param str date_col: The name of the column indicating the time dimension.
-        :param str metric_col: The name of the column indicating the dimension to forecast.
-        :param str fcst_col: The name of the column indication the forecast.
-        :param pd.DataFrame train_data: Pandas DataFrame with the training data.
-        :param pd.DataFrame test_data: Pandas DataFrame with the test data.
+        :param Modeler modeler: The Modeler instance used to interact with data.
         :param pm.arima.arima.ARIMA model: An already fitted ARIMA model, to instantiate a kronos Pmdarima from an already fitted model.
         :param int m: The period for seasonal differencing, m refers to the number of periods in each season.
         :param bool seasonal: Whether to fit a seasonal ARIMA.
@@ -45,12 +36,7 @@ class KRNSPmdarima:
         .. code-block:: python
 
             model = KRNSPmdarima(
-                    train_data=df_train,
-                    test_data=df_test,
-                    key_col='id',
-                    date_col='date',
-                    metric_col='y',
-                    fcst_col='y_hat',
+                    modeler=modeler,
                     m=7,
                     seasonal=True,
                     model=None,
@@ -58,12 +44,7 @@ class KRNSPmdarima:
 
         """
         # Kronos attributes
-        self.key_col = key_col
-        self.date_col = date_col
-        self.metric_col = metric_col
-        self.fcst_col = fcst_col
-        self.train_data = train_data.copy()
-        self.test_data = test_data.copy()
+        self.modeler = copy.deepcopy(modeler)
 
         # Model attributes
         self.m = m
@@ -82,27 +63,31 @@ class KRNSPmdarima:
         """
 
         try:
-            self.train_data.drop(
-                self.train_data.columns.difference([self.date_col, self.metric_col]),
+            self.modeler.train_data.drop(
+                self.modeler.train_data.columns.difference(
+                    [self.modeler.date_col, self.modeler.metric_col]
+                ),
                 axis=1,
                 inplace=True,
             )
-            self.train_data.set_index(self.date_col, inplace=True)
+            self.modeler.train_data.set_index(self.modeler.date_col, inplace=True)
         except Exception as e:
             logger.warning(
-                f"### Preprocess train data failed: {e} - {self.train_data.head(1)}"
+                f"### Preprocess train data failed: {e} - {self.modeler.train_data.head(1)}"
             )
 
         try:
-            self.test_data.drop(
-                self.test_data.columns.difference([self.date_col, self.metric_col]),
+            self.modeler.test_data.drop(
+                self.modeler.test_data.columns.difference(
+                    [self.modeler.date_col, self.modeler.metric_col]
+                ),
                 axis=1,
                 inplace=True,
             )
-            self.test_data.set_index(self.date_col, inplace=True)
+            self.modeler.test_data.set_index(self.modeler.date_col, inplace=True)
         except Exception as e:
             logger.warning(
-                f"### Preprocess test data failed: {e} - {self.test_data.head(1)}"
+                f"### Preprocess test data failed: {e} - {self.modeler.test_data.head(1)}"
             )
 
     def log_params(self, client: MlflowClient, run_id: str) -> None:
@@ -148,12 +133,15 @@ class KRNSPmdarima:
         try:
             # Define the model
             self.model = pm.auto_arima(
-                self.train_data, seasonal=self.seasonal, m=self.m
+                self.modeler.train_data, seasonal=self.seasonal, m=self.m
             )
+
+            # Add last training day attribute
+            self.model.last_training_day = self.modeler.train_data.index.max()
 
         except Exception as e:
             logger.error(
-                f"### Fit with model {self.model} failed: {e} - on data {self.train_data.head(1)}"
+                f"### Fit with model {self.model} failed: {e} - on data {self.modeler.train_data.head(1)}"
             )
 
     def predict(
@@ -169,14 +157,35 @@ class KRNSPmdarima:
         """
 
         try:
+            # Preprocess data (if needed)
+            if type(self.modeler.data.index[0]) != datetime.date:
+                self.preprocess()
+
+            # Retrieve model last training day
+            last_training_day = copy.deepcopy(self.model.last_training_day)
+
+            # Update model with last data (if any)
+            update_data = self.modeler.data[
+                last_training_day < self.modeler.data.index < fcst_first_date
+            ]
+            if len(update_data) > 0:
+                self.model.update(update_data)
+                last_training_day = update_data.index.max()
+
+            # Compute the difference between last_training_day and fcst_first_date
+            difference = (fcst_first_date - last_training_day).days
+
+            # Compute actual forecast horizon
+            fcst_horizon = difference + n_days - 1
+
             # make predictions
             pred = pd.DataFrame(
                 data={
-                    self.date_col: [
+                    self.modeler.date_col: [
                         fcst_first_date + datetime.timedelta(days=x)
-                        for x in range(n_days)
+                        for x in range(fcst_horizon)
                     ],
-                    self.fcst_col: self.model.predict(n_periods=n_days),
+                    self.modeler.fcst_col: self.model.predict(n_periods=fcst_horizon),
                 }
             )
 
