@@ -1,8 +1,6 @@
 from kronos.models.krns_prophet import KRNSProphet
 from kronos.models.krns_pmdarima import KRNSPmdarima
-from kronos.models.tensorflow.krns_gru import KRNSGRU
-from kronos.models.tensorflow.krns_lstm import KRNSLSTM
-from kronos.models.tensorflow.krns_simple_rnn import KRNSSimpleRNN
+from kronos.models.krns_tensorflow import KRNSTensorflow
 from kronos.ml_flower import MLFlower
 import pandas as pd
 import numpy as np
@@ -385,11 +383,22 @@ class Modeler:
             )
 
             # Predict with the model
-            pred = krns_model.predict(n_days=self.n_unit_test)
+            unit_test_fcst_first_date = datetime.date.today() + datetime.timedelta(
+                days=1
+            )
+            pred = krns_model.predict(
+                n_days=self.n_unit_test,
+                fcst_first_date=unit_test_fcst_first_date,
+            )
+
+            # Keep only relevant predictions for unit test
+            pred = pred[pred[self.date_col] >= unit_test_fcst_first_date]
 
             # Check quality
             unit_test_status = "OK" if len(pred) == self.n_unit_test else "KO"
-            logger.info(f"### Unit test result: {unit_test_status}")
+            logger.info(
+                f"### Unit test result: {unit_test_status} - requested: {self.n_unit_test} - predicted: {len(pred)}"
+            )
 
             return unit_test_status
 
@@ -568,47 +577,33 @@ class Modeler:
         if model_flavor == "prophet":
             model = KRNSProphet(
                 modeler=self,
-                interval_width=model_config.get("interval_width"),
-                growth=model_config.get("growth"),
-                daily_seasonality=model_config.get("daily_seasonality"),
-                weekly_seasonality=model_config.get("weekly_seasonality"),
-                yearly_seasonality=model_config.get("yearly_seasonality"),
-                seasonality_mode=model_config.get("seasonality_mode"),
-                floor=model_config.get("floor"),
+                interval_width=model_config.get("interval_width", 0.95),
+                growth=model_config.get("growth", "linear"),
+                daily_seasonality=model_config.get("daily_seasonality", False),
+                weekly_seasonality=model_config.get("weekly_seasonality", True),
+                yearly_seasonality=model_config.get("yearly_seasonality", True),
+                seasonality_mode=model_config.get("seasonality_mode", "multiplicative"),
+                floor=model_config.get("floor", None),
                 cap=self.max_value,
-                country_holidays=model_config.get("country_holidays"),
+                country_holidays=model_config.get("country_holidays", "IT"),
                 model=trained_model,
             )
         elif model_flavor == "pmdarima":
             model = KRNSPmdarima(
                 modeler=self,
-                m=model_config.get("m"),
-                seasonal=model_config.get("seasonal"),
+                m=model_config.get("m", 7),
+                seasonal=model_config.get("seasonal", True),
                 model=trained_model,
             )
-        elif model_flavor == "tfrnn":
-            model = KRNSSimpleRNN(
+        elif model_flavor == "tensorflow":
+            model = KRNSTensorflow(
                 modeler=self,
-                n_units=model_config.get("n_units"),
-                activation=model_config.get("activation"),
-                epochs=model_config.get("epochs"),
-                n_inputs=model_config.get("n_inputs"),
-            )
-        elif model_flavor == "tfgru":
-            model = KRNSGRU(
-                modeler=self,
-                n_units=model_config.get("n_units"),
-                activation=model_config.get("activation"),
-                epochs=model_config.get("epochs"),
-                n_inputs=model_config.get("n_inputs"),
-            )
-        elif model_flavor == "tflstm":
-            model = KRNSLSTM(
-                modeler=self,
-                n_units=model_config.get("n_units"),
-                activation=model_config.get("activation"),
-                epochs=model_config.get("epochs"),
-                n_inputs=model_config.get("n_inputs"),
+                nn_type=model_config.get("nn_type", "rnn"),
+                n_units=model_config.get("n_units", 128),
+                activation=model_config.get("activation", "relu"),
+                epochs=model_config.get("epochs", 25),
+                n_inputs=model_config.get("n_inputs", 30),
+                model=trained_model,
             )
         else:
             raise ValueError(f"Model {model_flavor} not supported.")

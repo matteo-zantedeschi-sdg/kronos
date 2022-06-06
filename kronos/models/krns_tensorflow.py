@@ -11,15 +11,16 @@ import datetime
 logger = logging.getLogger(__name__)
 
 
-class KRNSLSTM:
+class KRNSTensorflow:
     """
-    Class to implement LSTM in kronos.
+    Class to implement Tensorflow in kronos.
     """
 
     def __init__(
         self,
         modeler,  # TODO: How to explicit its data type without incur in [...] most likely due to a circular import
         model: tf.keras.Sequential = None,
+        nn_type: str = "rnn",
         n_units: int = 128,
         activation: str = "relu",
         epochs: int = 25,
@@ -29,9 +30,10 @@ class KRNSLSTM:
         Initialization method.
 
         :param Modeler modeler: The Modeler instance used to interact with data.
-        :param tf.keras.Sequential: An already fitted Sequential model containing a LSTM layer, to instantiate a kronos LSTM from an already fitted model.
-        :param int n_units: Number of units in the LSTM layer of the model.
-        :param str activation: Activation function in the LSTM layer of the model.
+        :param tf.keras.Sequential model: An already fitted Sequential model, to instantiate a kronos Tensorflow model from an already fitted one.
+        :param str nn_type: Type of neural network; might be one of the following: 'rnn', 'gru', 'lstm'.
+        :param int n_units: Number of units in the main layer of the model.
+        :param str activation: Activation function in the main layer of the model.
         :param int epochs: Number of epochs to train the model for.
         :param int n_inputs: Number of lag considered for the training of one step ahead.
 
@@ -41,8 +43,9 @@ class KRNSLSTM:
 
         .. code-block:: python
 
-            model = KRNSLSTM(
+            model = KRNSTensorflow(
                     modeler=modeler,
+                    nn_type='rnn',
                     n_units=128,
                     activation='relu',
                     epochs=25,
@@ -60,10 +63,28 @@ class KRNSLSTM:
         self.epochs = epochs
         self.n_units = n_units
 
+        # Define nn main layer
+        self.nn_type = nn_type
+        if self.nn_type == "rnn":
+            self.nn_main_layer = tf.keras.layers.SimpleRNN(
+                units=self.n_units, activation=self.activation, name="rnn_1"
+            )
+        elif self.nn_type == "lstm":
+            self.nn_main_layer = tf.keras.layers.LSTM(
+                units=self.n_units, activation=self.activation, name="lstm_1"
+            )
+        elif self.nn_type == "gru":
+            self.nn_main_layer = tf.keras.layers.GRU(
+                units=self.n_units, activation=self.activation, name="gru_1"
+            )
+        else:
+            raise ValueError(f"Neural network type {self.nn_type} not supported.")
+
         # To load an already configured model
         self.model = model
 
         self.model_params = {
+            "nn_type": self.nn_type,
             "n_inputs": self.n_inputs,
             "activation": self.activation,
             "epochs": self.epochs,
@@ -146,11 +167,9 @@ class KRNSLSTM:
             # Define the model
             self.model = tf.keras.Sequential(
                 [
-                    tf.keras.layers.Input(shape=(self.n_inputs, 1)),
-                    tf.keras.layers.LSTM(
-                        units=self.n_units, activation=self.activation
-                    ),
-                    tf.keras.layers.Dense(units=1),
+                    tf.keras.layers.Input(shape=(self.n_inputs, 1), name="input"),
+                    self.nn_main_layer,
+                    tf.keras.layers.Dense(units=1, name="output"),
                 ]
             )
 
@@ -210,7 +229,8 @@ class KRNSLSTM:
                     pred_val = self.model.predict(batch)[0]
                 else:
                     # Model loaded from mlflow model registry
-                    pred_val = self.model(input_1=batch)["dense"].numpy()[0]
+                    # Note: 'input' is the name of the first layer of the network, 'output' the name of the last one
+                    pred_val = self.model(input=batch)["output"].numpy()[0]
 
                 # Append the prediction into the array
                 predictions.append(pred_val[0])

@@ -63,6 +63,20 @@ class KRNSPmdarima:
         """
 
         try:
+            self.modeler.data.drop(
+                self.modeler.data.columns.difference(
+                    [self.modeler.date_col, self.modeler.metric_col]
+                ),
+                axis=1,
+                inplace=True,
+            )
+            self.modeler.data.set_index(self.modeler.date_col, inplace=True)
+        except Exception as e:
+            logger.warning(
+                f"### Preprocess data failed: {e} - {self.modeler.data.head(1)}"
+            )
+
+        try:
             self.modeler.train_data.drop(
                 self.modeler.train_data.columns.difference(
                     [self.modeler.date_col, self.modeler.metric_col]
@@ -159,31 +173,38 @@ class KRNSPmdarima:
         try:
             # Preprocess data (if needed)
             if type(self.modeler.data.index[0]) != datetime.date:
+                logger.warning(f"### Preprocessing data")
                 self.preprocess()
 
             # Retrieve model last training day
             last_training_day = copy.deepcopy(self.model.last_training_day)
+            logger.warning(f"### Last training day: {last_training_day}")
 
             # Update model with last data (if any)
             update_data = self.modeler.data[
-                last_training_day < self.modeler.data.index < fcst_first_date
+                (last_training_day < self.modeler.data.index)
+                & (self.modeler.data.index < fcst_first_date)
             ]
             if len(update_data) > 0:
+                logger.warning(f"### Data updated")
                 self.model.update(update_data)
                 last_training_day = update_data.index.max()
+                logger.warning(f"### New last training day: {last_training_day}")
 
             # Compute the difference between last_training_day and fcst_first_date
             difference = (fcst_first_date - last_training_day).days
+            logger.warning(f"### Difference: {difference}")
 
             # Compute actual forecast horizon
             fcst_horizon = difference + n_days - 1
+            logger.warning(f"### Fcst horizon: {fcst_horizon}")
 
             # make predictions
             pred = pd.DataFrame(
                 data={
                     self.modeler.date_col: [
-                        fcst_first_date + datetime.timedelta(days=x)
-                        for x in range(fcst_horizon)
+                        last_training_day + datetime.timedelta(days=x)
+                        for x in range(1, fcst_horizon + 1)
                     ],
                     self.modeler.fcst_col: self.model.predict(n_periods=fcst_horizon),
                 }

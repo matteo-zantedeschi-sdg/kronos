@@ -129,16 +129,6 @@ class KRNSProphet:
         """
 
         try:
-            self.modeler.data.rename(
-                columns={self.modeler.date_col: "ds", self.modeler.metric_col: "y"},
-                inplace=True,
-            )
-        except Exception as e:
-            logger.warning(
-                f"### Preprocess data failed: {e} - {self.modeler.data.head(1)}"
-            )
-
-        try:
             self.modeler.train_data.rename(
                 columns={self.modeler.date_col: "ds", self.modeler.metric_col: "y"},
                 inplace=True,
@@ -243,8 +233,8 @@ class KRNSProphet:
 
         try:
             # Compute difference from last date in the model and first date of forecast
-            model_last_date = self.model.history_dates[0].date()
-            difference = (fcst_first_date - model_last_date).days
+            last_training_day = self.model.history_dates[0].date()
+            difference = (fcst_first_date - last_training_day).days
 
             # Compute actual forecast horizon
             fcst_horizon = difference + n_days - 1
