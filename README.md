@@ -117,7 +117,7 @@ The required steps to release a new version on Azure DevOps are:
 
   1. Update package version in **setup.py** (_consistent with the change made_).
   2. **Commit** changes.
-  3. Create a **tag** called *release* (_required to trigger the azure release pipeline_).
+  3. Create a **tag** that start with *release_*, e.g. release_v1 (_required to trigger the azure release pipeline_).
   4. **Push** commit and tag.
 
 The new version of the package is now available in the Artifact feed specified in the **azure-pipelines.yaml** file.
