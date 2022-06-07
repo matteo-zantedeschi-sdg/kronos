@@ -170,6 +170,7 @@ class KRNSProphet:
         try:
             for key, val in self.model_params.items():
                 client.log_param(run_id, key, val)
+
         except Exception as e:
             logger.error(f"### Log params {self.model_params} failed: {e}")
 
@@ -239,12 +240,16 @@ class KRNSProphet:
 
         :return: (*dict*) A Dictionary containing retrieved parameters of m.
         """
-        res = {}
-        for pname in ["k", "m", "sigma_obs"]:
-            res[pname] = m.params[pname][0][0]
-        for pname in ["delta", "beta"]:
-            res[pname] = m.params[pname][0]
-        return res
+        try:
+            res = {}
+            for pname in ["k", "m", "sigma_obs"]:
+                res[pname] = m.params[pname][0][0]
+            for pname in ["delta", "beta"]:
+                res[pname] = m.params[pname][0]
+            return res
+
+        except Exception as e:
+            logger.error(f"### stan_init with model {m} failed: {e}")
 
     def update_model(self, df_update: pd.DataFrame) -> Prophet:
         """
@@ -256,30 +261,36 @@ class KRNSProphet:
         :return: (*Prophet*) The updated Prophet model.
         """
 
-        # Define the model
-        model = Prophet(
-            interval_width=self.model.interval_width,
-            growth=self.model.growth,
-            daily_seasonality=self.model.daily_seasonality,
-            weekly_seasonality=self.model.weekly_seasonality,
-            yearly_seasonality=self.model.yearly_seasonality,
-            seasonality_mode=self.model.seasonality_mode,
-        )
+        try:
+            # Define the model
+            model = Prophet(
+                interval_width=self.model.interval_width,
+                growth=self.model.growth,
+                daily_seasonality=self.model.daily_seasonality,
+                weekly_seasonality=self.model.weekly_seasonality,
+                yearly_seasonality=self.model.yearly_seasonality,
+                seasonality_mode=self.model.seasonality_mode,
+            )
 
-        # Add floor and cap
-        df_update["floor"] = self.floor
-        df_update["cap"] = self.cap
+            # Add floor and cap
+            df_update["floor"] = self.floor
+            df_update["cap"] = self.cap
 
-        # Add country holidays
-        model.add_country_holidays(country_name=self.model.country_holidays)
+            # Add country holidays
+            model.add_country_holidays(country_name=self.model.country_holidays)
 
-        # Fit the model with warm start
-        model.fit(df_update, init=self.stan_init(self.model))
+            # Fit the model with warm start
+            model.fit(df_update, init=self.stan_init(self.model))
 
-        # Remove floor and cap
-        df_update.drop(["floor", "cap"], axis=1, inplace=True)
+            # Remove floor and cap
+            df_update.drop(["floor", "cap"], axis=1, inplace=True)
 
-        return model
+            return model
+
+        except Exception as e:
+            logger.error(
+                f"### Update model {self.model} with data {df_update.head(1)} failed: {e}"
+            )
 
     def predict(
         self,

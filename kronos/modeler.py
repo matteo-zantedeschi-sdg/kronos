@@ -134,34 +134,38 @@ class Modeler:
         :return: *(dict)* A dictionary containing all metric names as keys and their computed values as values.
         """
 
-        supported_metrics = ["rmse", "mape"]
-        out = {}
+        try:
+            supported_metrics = ["rmse", "mape"]
+            out = {}
 
-        for metric in metrics:
+            for metric in metrics:
 
-            logger.debug(f"### Performing evaluation using {metric} metric.")
+                logger.debug(f"### Performing evaluation using {metric} metric.")
 
-            # Transform metric in lower case and remove whitespaces
-            metric = metric.lower().replace(" ", "")
+                # Transform metric in lower case and remove whitespaces
+                metric = metric.lower().replace(" ", "")
 
-            if metric not in supported_metrics:
-                logger.error(
-                    f"### Requested metric {metric} is not supported. Available metrics are: {supported_metrics}"
-                )
-            else:
-                if metric == "rmse":
-                    value = ((actual - pred) ** 2).mean() ** 0.5
-                elif metric == "mape":
-                    value = (np.abs((actual - pred) / actual)).mean() * 100
+                if metric not in supported_metrics:
+                    logger.error(
+                        f"### Requested metric {metric} is not supported. Available metrics are: {supported_metrics}"
+                    )
                 else:
-                    value = np.Inf
+                    if metric == "rmse":
+                        value = ((actual - pred) ** 2).mean() ** 0.5
+                    elif metric == "mape":
+                        value = (np.abs((actual - pred) / actual)).mean() * 100
+                    else:
+                        value = np.Inf
 
-                out[metric] = value
-                logger.debug(
-                    f"### Evaluation on {metric} completed with value {value}."
-                )
+                    out[metric] = value
+                    logger.debug(
+                        f"### Evaluation on {metric} completed with value {value}."
+                    )
 
-        return out
+            return out
+
+        except Exception as e:
+            logger.error(f"### Model evaluation with metrics {metrics}: {e}")
 
     def train_test_split(self) -> None:
         """
@@ -170,23 +174,27 @@ class Modeler:
         :return: No return.
         """
 
-        logger.debug("### Performing train/test split.")
+        try:
+            logger.debug("### Performing train/test split.")
 
-        if self.data.shape[0] - self.n_test < self.n_test:
-            logger.warning(
-                f"### Not enough records to perform train/test split: {self.data.shape[0]} rows, {self.n_test} for test"
-            )
-            raise Exception(
-                f"### Not enough records to perform train/test split: {self.data.shape[0]} rows, {self.n_test} for test"
-            )
-        else:
-            self.train_data = self.data.sort_values(
-                by=[self.date_col], ascending=False
-            ).iloc[self.n_test :, :]
-            self.test_data = self.data.sort_values(
-                by=[self.date_col], ascending=False
-            ).iloc[: self.n_test, :]
-            logger.debug("### Train/test split completed.")
+            if self.data.shape[0] - self.n_test < self.n_test:
+                logger.warning(
+                    f"### Not enough records to perform train/test split: {self.data.shape[0]} rows, {self.n_test} for test"
+                )
+                raise Exception(
+                    f"### Not enough records to perform train/test split: {self.data.shape[0]} rows, {self.n_test} for test"
+                )
+            else:
+                self.train_data = self.data.sort_values(
+                    by=[self.date_col], ascending=False
+                ).iloc[self.n_test :, :]
+                self.test_data = self.data.sort_values(
+                    by=[self.date_col], ascending=False
+                ).iloc[: self.n_test, :]
+                logger.debug("### Train/test split completed.")
+
+        except Exception as e:
+            logger.error(f"### Train test split failed: {e}")
 
     def training(self) -> None:
         """
@@ -361,6 +369,7 @@ class Modeler:
             self.winning_model_name = self.df_performances.iloc[
                 self.df_performances["error_avg"].argmin()
             ].name
+
         except Exception as e:
             logger.error(f"### Competition failed: {e}")
 
@@ -406,7 +415,7 @@ class Modeler:
 
         except Exception as e:
             logger.error(
-                f"Unit test of model {model_version_name} in stage {model_version_stage} failed: {e}"
+                f"### Unit test of model {model_version_name} in stage {model_version_stage} failed: {e}"
             )
 
     def deploy(self) -> None:
@@ -564,16 +573,24 @@ class Modeler:
         :return: *(dict)* The list with all the instances of kronos models.
         """
 
-        # For each model config create its instance
-        models = {}
-        for model_name, model_config in models_config.items():
-            model_flavor = model_name.split("_")[0]
-            model = self.model_generation(
-                model_flavor=model_flavor, model_config=model_config, trained_model=None
+        try:
+            # For each model config create its instance
+            models = {}
+            for model_name, model_config in models_config.items():
+                model_flavor = model_name.split("_")[0]
+                model = self.model_generation(
+                    model_flavor=model_flavor,
+                    model_config=model_config,
+                    trained_model=None,
+                )
+                # Add model to the model list
+                models[model_name] = model
+            return models
+
+        except Exception as e:
+            logger.error(
+                f"### Create all models failed: {e} - models config are: {models_config}"
             )
-            # Add model to the model list
-            models[model_name] = model
-        return models
 
     def model_generation(
         self, model_flavor: str, model_config: dict, trained_model: None
@@ -587,38 +604,46 @@ class Modeler:
 
         :return: The kronos model instantiated.
         """
-        if model_flavor == "prophet":
-            model = KRNSProphet(
-                modeler=self,
-                interval_width=model_config.get("interval_width", 0.95),
-                growth=model_config.get("growth", "linear"),
-                daily_seasonality=model_config.get("daily_seasonality", False),
-                weekly_seasonality=model_config.get("weekly_seasonality", True),
-                yearly_seasonality=model_config.get("yearly_seasonality", True),
-                seasonality_mode=model_config.get("seasonality_mode", "multiplicative"),
-                floor=model_config.get("floor", None),
-                cap=self.max_value,
-                country_holidays=model_config.get("country_holidays", "IT"),
-                model=trained_model,
-            )
-        elif model_flavor == "pmdarima":
-            model = KRNSPmdarima(
-                modeler=self,
-                m=model_config.get("m", 7),
-                seasonal=model_config.get("seasonal", True),
-                model=trained_model,
-            )
-        elif model_flavor == "tensorflow":
-            model = KRNSTensorflow(
-                modeler=self,
-                nn_type=model_config.get("nn_type", "rnn"),
-                n_units=model_config.get("n_units", 128),
-                activation=model_config.get("activation", "relu"),
-                epochs=model_config.get("epochs", 25),
-                n_inputs=model_config.get("n_inputs", 30),
-                model=trained_model,
-            )
-        else:
-            raise ValueError(f"Model {model_flavor} not supported.")
+        try:
+            if model_flavor == "prophet":
+                model = KRNSProphet(
+                    modeler=self,
+                    interval_width=model_config.get("interval_width", 0.95),
+                    growth=model_config.get("growth", "linear"),
+                    daily_seasonality=model_config.get("daily_seasonality", False),
+                    weekly_seasonality=model_config.get("weekly_seasonality", True),
+                    yearly_seasonality=model_config.get("yearly_seasonality", True),
+                    seasonality_mode=model_config.get(
+                        "seasonality_mode", "multiplicative"
+                    ),
+                    floor=model_config.get("floor", None),
+                    cap=self.max_value,
+                    country_holidays=model_config.get("country_holidays", "IT"),
+                    model=trained_model,
+                )
+            elif model_flavor == "pmdarima":
+                model = KRNSPmdarima(
+                    modeler=self,
+                    m=model_config.get("m", 7),
+                    seasonal=model_config.get("seasonal", True),
+                    model=trained_model,
+                )
+            elif model_flavor == "tensorflow":
+                model = KRNSTensorflow(
+                    modeler=self,
+                    nn_type=model_config.get("nn_type", "rnn"),
+                    n_units=model_config.get("n_units", 128),
+                    activation=model_config.get("activation", "relu"),
+                    epochs=model_config.get("epochs", 25),
+                    n_inputs=model_config.get("n_inputs", 30),
+                    model=trained_model,
+                )
+            else:
+                raise ValueError(f"Model {model_flavor} not supported.")
 
-        return model
+            return model
+
+        except Exception as e:
+            logger.error(
+                f"### Model generation of model flavor {model_flavor} with model config {model_config} and trained model {trained_model} failed: {e}"
+            )

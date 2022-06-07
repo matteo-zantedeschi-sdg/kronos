@@ -102,6 +102,7 @@ class KRNSTensorflow:
             self.modeler.train_data = np.array(
                 self.modeler.train_data[self.modeler.metric_col]
             )
+
         except Exception as e:
             logger.warning(f"### Preprocess train data failed: {e}")
 
@@ -109,6 +110,7 @@ class KRNSTensorflow:
             self.modeler.test_data = np.array(
                 self.modeler.test_data[self.modeler.metric_col]
             )
+
         except Exception as e:
             logger.warning(f"### Preprocess test data failed: {e}")
 
@@ -124,6 +126,7 @@ class KRNSTensorflow:
         try:
             for key, val in self.model_params.items():
                 client.log_param(run_id, key, val)
+
         except Exception as e:
             logger.error(f"### Log params {self.model_params} failed: {e}")
 

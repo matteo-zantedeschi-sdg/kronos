@@ -40,9 +40,13 @@ class MLFlower:
 
         :return: *(mlflow.ActiveRun)* object that acts as a context manager wrapping the run’s state.
         """
-        run = mlflow.start_run(experiment_id=self.experiment, run_name=run_name)
-        logger.info(f"### Run started: {run}")
-        return run
+        try:
+            run = mlflow.start_run(experiment_id=self.experiment, run_name=run_name)
+            logger.info(f"### Run started: {run}")
+            return run
+
+        except Exception as e:
+            logger.error(f"### Start of the run {run_name} failed: {e}")
 
     @staticmethod
     def end_run() -> None:
@@ -51,8 +55,12 @@ class MLFlower:
 
         :return: No return.
         """
-        mlflow.end_run()
-        logger.info("### Run ended")
+        try:
+            mlflow.end_run()
+            logger.info("### Run ended")
+
+        except Exception as e:
+            logger.error(f"### End of the run failed: {e}")
 
     @staticmethod
     def load_model(model_uri: str):
@@ -103,6 +111,7 @@ class MLFlower:
         try:
             self.experiment = self.client.create_experiment(experiment_path)
             logger.info(f"### Experiment created: {self.experiment}")
+
         except Exception as e:
             logger.warning(f"### Experiment creation failed: {e}")
             self.experiment = self.client.get_experiment_by_name(
@@ -122,23 +131,28 @@ class MLFlower:
 
         :return: *(ModelVersion)* The ModelVersion object created, corresponding to the model registered.
         """
+        try:
+            # Register the trained model to MLflow Registry
+            model_details = mlflow.register_model(model_uri=model_uri, name=model_name)
 
-        # Register the trained model to MLflow Registry
-        model_details = mlflow.register_model(model_uri=model_uri, name=model_name)
+            # Check registration Status
+            for _ in range(timeout_s):
+                model_version_details = self.client.get_model_version(
+                    name=model_details.name, version=model_details.version
+                )
+                status = ModelVersionStatus.from_string(model_version_details.status)
+                if status == ModelVersionStatus.READY:
+                    break
+                time.sleep(1)
 
-        # Check registration Status
-        for _ in range(timeout_s):
-            model_version_details = self.client.get_model_version(
-                name=model_details.name, version=model_details.version
+            logger.info(f"### Model registered: {model_details}")
+
+            return model_details
+
+        except Exception as e:
+            logger.error(
+                f"### Registration of the model {model_name} with uri {model_uri} failed: {e}"
             )
-            status = ModelVersionStatus.from_string(model_version_details.status)
-            if status == ModelVersionStatus.READY:
-                break
-            time.sleep(1)
-
-        logger.info(f"### Model registered: {model_details}")
-
-        return model_details
 
     def set_model_tag(
         self, model_version_details: ModelVersion, tag_key: str, tag_value: str
@@ -152,14 +166,20 @@ class MLFlower:
 
         :return: No return.
         """
-        # Set the model flavor tag
-        self.client.set_model_version_tag(
-            name=model_version_details.name,
-            version=model_version_details.version,
-            key=tag_key,
-            value=tag_value,
-        )
-        logger.info(f"### Tag set: {tag_key} - {tag_value}")
+        try:
+            # Set the model flavor tag
+            self.client.set_model_version_tag(
+                name=model_version_details.name,
+                version=model_version_details.version,
+                key=tag_key,
+                value=tag_value,
+            )
+            logger.info(f"### Tag set: {tag_key} - {tag_value}")
+
+        except Exception as e:
+            logger.error(
+                f"### Setting tag {tag_key}-{tag_value} on model {model_version_details} failed: {e}"
+            )
 
     def promote_model(
         self,
@@ -184,5 +204,6 @@ class MLFlower:
                 archive_existing_versions=archive_existing_versions,
             )
             return model_version
+
         except Exception as e:
-            logger.error(f"Model promotion failed: {e}")
+            logger.error(f"### Model promotion failed: {e}")
