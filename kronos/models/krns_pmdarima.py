@@ -159,13 +159,25 @@ class KRNSPmdarima:
             )
 
     def predict(
-        self, n_days: int, fcst_first_date: datetime.date = datetime.date.today()
+        self,
+        n_days: int,
+        fcst_first_date: datetime.date = datetime.date.today(),
+        future_only: bool = True,
     ) -> pd.DataFrame:
         """
         Predict using the fitted model.
 
+        Four situations can occur:
+            1. fcst_first_date <= last_training_day and difference < n_days (still something to forecast) - Note: actual data used as forecast.
+            2. fcst_first_date << last training day and difference >= n_days (nothing to forecast) - Note: actual data used as forecast.
+            3. fcst_first_date > last training day and some available intermediate data - Note: model update.
+            4. fcst_first_date > last training day and no intermediate data available.
+
+        Finally, depending on the parameter *Modeler.future_only*, it is decided whether to keep only the observations from fcst_first_date onwards or also those in between.
+
         :param int n_days: Number of data points to predict.
         :param datetime.date fcst_first_date: First date of forecast.
+        :param bool future_only: Whether to return predicted missing values between the last observed date and the forecast first date (*False*) or only future values (*True*), i.e. those from the forecast first date onwards.
 
         :return: *(pd.DataFrame)* Pandas DataFrame containing the predictions.
         """
@@ -173,42 +185,69 @@ class KRNSPmdarima:
         try:
             # Preprocess data (if needed)
             if type(self.modeler.data.index[0]) != datetime.date:
-                logger.warning(f"### Preprocessing data")
                 self.preprocess()
 
             # Retrieve model last training day
             last_training_day = copy.deepcopy(self.model.last_training_day)
-            logger.warning(f"### Last training day: {last_training_day}")
 
-            # Update model with last data (if any)
+            # Update model with last data (if any) and update last_training_day value
             update_data = self.modeler.data[
                 (last_training_day < self.modeler.data.index)
                 & (self.modeler.data.index < fcst_first_date)
             ]
             if len(update_data) > 0:
-                logger.warning(f"### Data updated")
                 self.model.update(update_data)
                 last_training_day = update_data.index.max()
-                logger.warning(f"### New last training day: {last_training_day}")
 
             # Compute the difference between last_training_day and fcst_first_date
             difference = (fcst_first_date - last_training_day).days
-            logger.warning(f"### Difference: {difference}")
 
             # Compute actual forecast horizon
-            fcst_horizon = difference + n_days - 1
-            logger.warning(f"### Fcst horizon: {fcst_horizon}")
+            fcst_horizon = max(difference + n_days - 1, 0)
 
-            # make predictions
-            pred = pd.DataFrame(
-                data={
-                    self.modeler.date_col: [
-                        last_training_day + datetime.timedelta(days=x)
-                        for x in range(1, fcst_horizon + 1)
-                    ],
-                    self.modeler.fcst_col: self.model.predict(n_periods=fcst_horizon),
-                }
-            )
+            # Make predictions
+            if fcst_horizon > 0:
+                pred = pd.DataFrame(
+                    data={
+                        self.modeler.date_col: [
+                            last_training_day + datetime.timedelta(days=x)
+                            for x in range(1, fcst_horizon + 1)
+                        ],
+                        self.modeler.fcst_col: self.model.predict(
+                            n_periods=fcst_horizon
+                        ),
+                    }
+                )
+            else:
+                pred = pd.DataFrame(
+                    data={self.modeler.date_col: [], self.modeler.fcst_col: []}
+                )
+
+            # Attach actual data on predictions
+            if difference < 0:
+                # Keep last n actual data (n = difference - 1)
+                actual_data = self.modeler.data.sort_index(ascending=True).iloc[
+                    difference - 1 :
+                ]
+                # Reset index
+                actual_data.reset_index(inplace=True)
+                # Rename columns
+                actual_data.rename(
+                    columns={self.modeler.metric_col: self.modeler.fcst_col},
+                    inplace=True,
+                )
+                # Concat to pred and reset index
+                pred = pd.concat([actual_data, pred])
+                pred.reset_index(drop=True, inplace=True)
+
+                # Keep relevant data
+                if future_only:
+                    pred = pred[pred[self.modeler.date_col] >= fcst_first_date]
+                if difference < 0:
+                    pred = pred[
+                        pred[self.modeler.date_col]
+                        < fcst_first_date + datetime.timedelta(days=n_days)
+                    ]
 
             return pred
 

@@ -160,15 +160,27 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="kronos.models.krns_tensorflow.KRNSTensorflow.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_days</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fcst_first_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime.date</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">datetime.date(2022,</span> <span class="pre">6,</span> <span class="pre">6)</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pandas.core.frame.DataFrame</span></span></span><a class="headerlink" href="#kronos.models.krns_tensorflow.KRNSTensorflow.predict" title="Permalink to this definition"></a></dt>
-<dd><p>Predict using the fitted model.
-Within the body of the function, the predict method is only called on newly trained models that are still in memory.
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_days</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fcst_first_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime.date</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">datetime.date(2022,</span> <span class="pre">6,</span> <span class="pre">7)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_only</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pandas.core.frame.DataFrame</span></span></span><a class="headerlink" href="#kronos.models.krns_tensorflow.KRNSTensorflow.predict" title="Permalink to this definition"></a></dt>
+<dd><p>Predict using the fitted model.</p>
+<p>Within the body of the function, the predict method is only called on newly trained models that are still in memory.
 For serialized models from the mlflow model register another prediction method is used.</p>
+<dl class="simple">
+<dt>Four situations can occur:</dt><dd><ol class="arabic simple">
+<li><p>fcst_first_date &lt;= last_training_day and difference &lt; n_days (still something to forecast) - Note: all forecasts are predicted by the model.</p></li>
+<li><p>fcst_first_date &lt;&lt; last training day and difference &gt;= n_days (nothing to forecast) - Note: all forecasts are predicted by the model.</p></li>
+<li><p>fcst_first_date &gt; last training day and some available intermediate data - Note: no update strategy, intermediate data is used to feed the model.</p></li>
+<li><p>fcst_first_date &gt; last training day and no intermediate data available.</p></li>
+</ol>
+</dd>
+</dl>
+<p>Since the first step is to keep only historical data (data prior to fcst_first_date, i.e. difference must be at least 1), in each scenario all forecasts are predicted by the model in an autoregressive way by giving the last <em>n_inputs</em> of the historical data to the fitted model.</p>
+<p>Finally, depending on the parameter <em>Modeler.future_only</em>, it is decided whether to keep only the observations from fcst_first_date onwards or also those in between.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>n_days</strong> (<em>int</em>) – Number of data points to predict.</p></li>
 <li><p><strong>fcst_first_date</strong> (<em>datetime.date</em>) – First date of forecast.</p></li>
+<li><p><strong>future_only</strong> (<em>bool</em>) – Whether to return predicted missing values between the last observed date and the forecast first date (<em>False</em>) or only future values (<em>True</em>), i.e. those from the forecast first date onwards.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>

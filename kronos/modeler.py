@@ -27,7 +27,6 @@ class Modeler:
         metric_col: str,
         fcst_col: str,
         models_config: dict,
-        days_from_last_obs_col: str,
         current_date: datetime.date,
         fcst_first_date: datetime.date,
         n_test: int,
@@ -37,6 +36,7 @@ class Modeler:
         dt_reference_col: str,
         fcst_competition_metrics: list,
         fcst_competition_metric_weights: list,
+        future_only: bool,
     ) -> None:
         """
         Initialization method.
@@ -50,7 +50,6 @@ class Modeler:
         :param str metric_col: The name of the column indicating the dimension to forecast.
         :param str fcst_col: The name of the column indication the forecast.
         :param dict models_config: The dict containing all the model configurations.
-        :param str days_from_last_obs_col: The name of the column indicating the days since the last available observation in the time series.
         :param datetime.date current_date: Current processing date.
         :param datetime.date fcst_first_date: Date of first day of forecast, usually is the day following the current date.
         :param int n_test: Number of observations to use as test set.
@@ -60,6 +59,7 @@ class Modeler:
         :param str dt_reference_col: The name of the column indicating the date used as reference date for forecast.
         :param list fcst_competition_metrics: List of metrics to be used in the competition.
         :param list fcst_competition_metric_weights: List of weights for metrics to be used in the competition.
+        :param bool future_only: Whether to return predicted missing values between the last observed date and the forecast first date (*False*) or only future values (*True*), i.e. those from the forecast first date onwards.
 
         :return: No return.
 
@@ -75,7 +75,6 @@ class Modeler:
                     metric_col='y',
                     fcst_col='y_hat',
                     models_config={"pmdarima_1":{"model_flavor":"pmdarima","m":7,"seasonal":true}},
-                    days_from_last_obs_col='days_from_last_obs',
                     current_date=(date.today() + timedelta(-1)).strftime('%Y-%m-%d'),
                     fcst_first_date=date.today().strftime('%Y-%m-%d'),
                     n_test=7,
@@ -84,7 +83,8 @@ class Modeler:
                     dt_creation_col='creation_date',
                     dt_reference_col='reference_date',
                     fcst_competition_metrics=['rmse', 'mape'],
-                    fcst_competition_metric_weights=[0.5, 0.5]
+                    fcst_competition_metric_weights=[0.5, 0.5],
+                    future_only=True
                 )
 
         """
@@ -97,7 +97,6 @@ class Modeler:
         self.metric_col = metric_col
         self.fcst_col = fcst_col
         self.models_config = models_config
-        self.days_from_last_obs_col = days_from_last_obs_col
         self.current_date = current_date
         self.fcst_first_date = fcst_first_date
         self.n_test = n_test
@@ -107,6 +106,7 @@ class Modeler:
         self.dt_reference_col = dt_reference_col
         self.fcst_competition_metrics = fcst_competition_metrics
         self.fcst_competition_metric_weights = fcst_competition_metric_weights
+        self.future_only = future_only
 
         # Defined attributes
         self.key_code = str(self.data[self.key_col].iloc[0])
@@ -244,7 +244,9 @@ class Modeler:
                     # Make predictions
                     test_data_first_date = self.test_data[self.date_col].min()
                     pred = model.predict(
-                        n_days=self.n_test, fcst_first_date=test_data_first_date
+                        n_days=self.n_test,
+                        fcst_first_date=test_data_first_date,
+                        future_only=True,
                     )
 
                     # Compute rmse and mape
@@ -296,7 +298,9 @@ class Modeler:
                 self.test_data[self.date_col].sort_values(ascending=True).iloc[0]
             )
             pred = krns_model.predict(
-                n_days=self.n_test, fcst_first_date=test_data_first_date
+                n_days=self.n_test,
+                fcst_first_date=test_data_first_date,
+                future_only=True,
             )
 
             # Compute rmse
@@ -389,10 +393,8 @@ class Modeler:
             pred = krns_model.predict(
                 n_days=self.n_unit_test,
                 fcst_first_date=unit_test_fcst_first_date,
+                future_only=True,
             )
-
-            # Keep only relevant predictions for unit test
-            pred = pred[pred[self.date_col] >= unit_test_fcst_first_date]
 
             # Check quality
             unit_test_status = "OK" if len(pred) == self.n_unit_test else "KO"
@@ -498,7 +500,9 @@ class Modeler:
 
             # Get predictions
             pred = krns_model.predict(
-                fcst_first_date=self.fcst_first_date, n_days=self.fcst_horizon
+                fcst_first_date=self.fcst_first_date,
+                n_days=self.fcst_horizon,
+                future_only=self.future_only,
             )
 
             # Keep only relevant columns
@@ -507,8 +511,20 @@ class Modeler:
         except Exception as e:
             logger.error(f"### Prediction failed: {e}")
 
-            # Get last value and date
-            last_value = self.data.sort_values(
+            # Keep only historic data
+            historic_data = self.data[self.data[self.date_col] < self.fcst_first_date]
+
+            # Compute last observed historical day
+            last_observed_day = historic_data[self.date_col].max()
+
+            # Compute the difference between last_observed_day and fcst_first_date
+            difference = (self.fcst_first_date - last_observed_day).days
+
+            # Compute actual forecast horizon
+            fcst_horizon = difference + self.fcst_horizon - 1
+
+            # Get last value
+            last_value = historic_data.sort_values(
                 by=self.date_col, ascending=False, inplace=False
             ).iloc[0][self.metric_col]
 
@@ -516,21 +532,18 @@ class Modeler:
             pred = pd.DataFrame(
                 {
                     self.date_col: [
-                        self.fcst_first_date + datetime.timedelta(days=x)
-                        for x in range(self.fcst_horizon)
+                        last_observed_day + datetime.timedelta(days=x)
+                        for x in range(1, fcst_horizon + 1)
                     ],
-                    self.fcst_col: [last_value for x in range(self.fcst_horizon)],
+                    self.fcst_col: [last_value for x in range(fcst_horizon)],
                 }
             )
 
-        # Compute days from last obs, reference date and prediction date
-        last_date = self.data.sort_values(
-            by=self.date_col, ascending=False, inplace=False
-        ).iloc[0][self.date_col]
-        days_from_last_obs = (datetime.date.today() - last_date).days
+            # Keep relevant data
+            if self.future_only:
+                pred = pred[pred[self.date_col] >= self.fcst_first_date]
 
         # Add to predictions
-        pred[self.days_from_last_obs_col] = days_from_last_obs
         pred[self.dt_reference_col] = self.fcst_first_date
         pred[self.dt_creation_col] = self.current_date
 

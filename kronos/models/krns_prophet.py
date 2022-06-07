@@ -129,6 +129,16 @@ class KRNSProphet:
         """
 
         try:
+            self.modeler.data.rename(
+                columns={self.modeler.date_col: "ds", self.modeler.metric_col: "y"},
+                inplace=True,
+            )
+        except Exception as e:
+            logger.warning(
+                f"### Preprocess data failed: {e} - {self.modeler.train_data.head(1)}"
+            )
+
+        try:
             self.modeler.train_data.rename(
                 columns={self.modeler.date_col: "ds", self.modeler.metric_col: "y"},
                 inplace=True,
@@ -220,28 +230,118 @@ class KRNSProphet:
                 f"### Fit with model {self.model} failed: {e} - on data {self.modeler.train_data.head(1)}"
             )
 
+    @staticmethod
+    def stan_init(m: Prophet) -> dict:
+        """
+        Retrieve parameters from a trained model in the format used to initialize a new Stan model.
+
+        :param Prophet m: A trained model of the Prophet class.
+
+        :return: (*dict*) A Dictionary containing retrieved parameters of m.
+        """
+        res = {}
+        for pname in ["k", "m", "sigma_obs"]:
+            res[pname] = m.params[pname][0][0]
+        for pname in ["delta", "beta"]:
+            res[pname] = m.params[pname][0]
+        return res
+
+    def update_model(self, df_update: pd.DataFrame) -> Prophet:
+        """
+        Method to update the already fitted model with new data.
+        Update in this case is intended as a new fit with warm-start.
+
+        :param DataFrame df_update: The dataframe containing the data to update the model with.
+
+        :return: (*Prophet*) The updated Prophet model.
+        """
+
+        # Define the model
+        model = Prophet(
+            interval_width=self.model.interval_width,
+            growth=self.model.growth,
+            daily_seasonality=self.model.daily_seasonality,
+            weekly_seasonality=self.model.weekly_seasonality,
+            yearly_seasonality=self.model.yearly_seasonality,
+            seasonality_mode=self.model.seasonality_mode,
+        )
+
+        # Add floor and cap
+        df_update["floor"] = self.floor
+        df_update["cap"] = self.cap
+
+        # Add country holidays
+        model.add_country_holidays(country_name=self.model.country_holidays)
+
+        # Fit the model with warm start
+        model.fit(df_update, init=self.stan_init(self.model))
+
+        # Remove floor and cap
+        df_update.drop(["floor", "cap"], axis=1, inplace=True)
+
+        return model
+
     def predict(
-        self, n_days: int, fcst_first_date: datetime.date = datetime.date.today()
+        self,
+        n_days: int,
+        fcst_first_date: datetime.date = datetime.date.today(),
+        future_only: bool = True,
     ) -> pd.DataFrame:
         """
+        Predict using the fitted model.
+
+        Four situations can occur:
+            1. fcst_first_date <= last_training_day and difference < n_days (still something to forecast) - Note: actual data used as forecast.
+            2. fcst_first_date << last training day and difference >= n_days (nothing to forecast) - Note: actual data used as forecast.
+            3. fcst_first_date > last training day and some available intermediate data - Note: model update.
+            4. fcst_first_date > last training day and no intermediate data available.
+
+        Finally, depending on the parameter *Modeler.future_only*, it is decided whether to keep only the observations from fcst_first_date onwards or also those in between.
 
         :param int n_days: Number of data points to predict.
         :param datetime.date fcst_first_date: First date of forecast.
+        :param bool future_only: Whether to return predicted missing values between the last observed date and the forecast first date (*False*) or only future values (*True*), i.e. those from the forecast first date onwards.
 
         :return: *(pd.DataFrame)* Pandas DataFrame containing the predictions.
         """
 
         try:
-            # Compute difference from last date in the model and first date of forecast
+            # Preprocess data (if needed)
+            if (
+                "ds" not in self.modeler.data.columns
+                or "y" not in self.modeler.data.columns
+            ):
+                self.preprocess()
+
+            # Retrieve model last training day
             last_training_day = self.model.history_dates[0].date()
+
+            # Update model with last data (if any) and update last_training_day value
+            n_update_rows = len(
+                self.modeler.data[
+                    (last_training_day < self.modeler.data["ds"])
+                    & (self.modeler.data["ds"] < fcst_first_date)
+                ]
+            )
+            if n_update_rows > 0:
+                update_data = self.modeler.data[
+                    self.modeler.data["ds"] < fcst_first_date
+                ]
+                self.model = self.update_model(df_update=update_data)
+                last_training_day = self.model.history_dates[0].date()
+
+            # Compute the difference between last_training_day and fcst_first_date
             difference = (fcst_first_date - last_training_day).days
 
-            # Compute actual forecast horizon
-            fcst_horizon = difference + n_days - 1
+            # Set include_history based on whether fcst_first_date is older or newer than last_training_day
+            include_history = False if difference > 0 else True
 
-            # configure predictions
+            # Compute actual forecast horizon
+            fcst_horizon = max(difference + n_days - 1, 0)
+
+            # Configure predictions
             pred_config = self.model.make_future_dataframe(
-                periods=fcst_horizon, freq="d", include_history=False
+                periods=fcst_horizon, freq="d", include_history=include_history
             )
 
             # Add floor and cap
@@ -254,8 +354,13 @@ class KRNSProphet:
             # Convert datetime to date
             pred["ds"] = pred["ds"].dt.date
 
-            # Keep only relevant period
-            pred = pred[pred["ds"] >= fcst_first_date]
+            # Keep relevant data
+            if future_only:
+                pred = pred[pred["ds"] >= fcst_first_date]
+            if difference < 0:
+                pred = pred[
+                    pred["ds"] < fcst_first_date + datetime.timedelta(days=n_days)
+                ]
 
             # Rename columns
             pred.rename(

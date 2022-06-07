@@ -18,7 +18,6 @@ def forecast_udf_gen(
     action_col: str,
     models_col: str,
     models_config: dict,
-    days_from_last_obs_col: str,
     current_date: datetime.date,
     fcst_first_date: datetime.date,
     n_test: int,
@@ -28,6 +27,7 @@ def forecast_udf_gen(
     dt_reference_col: str,
     fcst_competition_metrics: list,
     fcst_competition_metric_weights: list,
+    future_only: bool,
 ):
     """
     A function used to create a pandas User Defined Function (UDF) with the specified parameters.
@@ -44,7 +44,6 @@ def forecast_udf_gen(
         * "predict": Use the production model to predict.
     :param str models_col: The name of the column indicating the models for competition.
     :param dict models_config: The dict containing all the model configurations.
-    :param str days_from_last_obs_col: The name of the column indicating the days since the last available observation in the time series.
     :param datetime.date current_date: Current processing date.
     :param datetime.date fcst_first_date: Date of first day of forecast, usually is the day following the current date.
     :param int n_test: Number of observations to use as test set.
@@ -54,6 +53,7 @@ def forecast_udf_gen(
     :param str dt_reference_col: The name of the column indicating the date used as reference date for forecast.
     :param list fcst_competition_metrics: List of metrics to be used in the competition.
     :param list fcst_competition_metric_weights: List of weights for metrics to be used in the competition.
+    :param bool future_only: Whether to return predicted missing values between the last observed date and the forecast first date (*False*) or only future values (*True*), i.e. those from the forecast first date onwards.
 
     :return: A pandas UDF with the specified parameters as arguments.
 
@@ -71,7 +71,6 @@ def forecast_udf_gen(
                 action_col='action',
                 models_col='models',
                 models_config={"pmdarima_1":{"model_flavor":"pmdarima","m":7,"seasonal":true}},
-                days_from_last_obs_col='days_from_last_obs',
                 current_date=(date.today() + timedelta(-1)).strftime('%Y-%m-%d'),
                 fcst_first_date=date.today().strftime('%Y-%m-%d'),
                 n_test=7,
@@ -80,7 +79,8 @@ def forecast_udf_gen(
                 dt_creation_col='creation_date',
                 dt_reference_col='reference_date',
                 fcst_competition_metrics=['rmse', 'mape'],
-                fcst_competition_metric_weights=[0.5, 0.5]
+                fcst_competition_metric_weights=[0.5, 0.5],
+                future_only=True
             )
 
     """
@@ -126,7 +126,6 @@ def forecast_udf_gen(
             metric_col=metric_col,
             fcst_col=fcst_col,
             models_config=models_config,
-            days_from_last_obs_col=days_from_last_obs_col,
             current_date=current_date,
             fcst_first_date=fcst_first_date,
             n_test=n_test,
@@ -136,6 +135,7 @@ def forecast_udf_gen(
             dt_reference_col=dt_reference_col,
             fcst_competition_metrics=fcst_competition_metrics,
             fcst_competition_metric_weights=fcst_competition_metric_weights,
+            future_only=future_only,
         )
 
         # TRAINING #####

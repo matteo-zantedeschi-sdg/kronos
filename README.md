@@ -46,7 +46,7 @@ Define the schema of the Spark DataFrame containing the output forecast.
 This is **strictly required** (as is) in order to subsequently apply the pandas User Defined Function.
 
 ```python
-from pyspark.sql.types import StructType, StructField, DateType, FloatType, StringType, IntegerType
+from pyspark.sql.types import StructType, StructField, DateType, FloatType, StringType
 
 result_schema = StructType([
     StructField(key_col, StringType()),
@@ -54,7 +54,6 @@ result_schema = StructType([
     StructField(fcst_col, FloatType()),
     StructField(dt_creation_col, DateType()),
     StructField(dt_reference_col, DateType()),
-    StructField(days_from_last_obs_col, IntegerType()),
 ])
 ```
 
@@ -88,7 +87,6 @@ forecast_udf = forecast_udf_gen(
     action_col=action_col,
     models_col=models_col,
     models_config=models_config,
-    days_from_last_obs_col=days_from_last_obs_col, 
     current_date=current_date, 
     fcst_first_date=fcst_first_date, 
     n_test=n_test, 
@@ -97,7 +95,8 @@ forecast_udf = forecast_udf_gen(
     dt_creation_col=dt_creation_col,
     dt_reference_col=dt_reference_col,
     fcst_competition_metrics=fcst_competition_metrics,
-    fcst_competition_metric_weights=fcst_competition_metric_weights
+    fcst_competition_metric_weights=fcst_competition_metric_weights,
+    future_only=True
 )
 ```
 

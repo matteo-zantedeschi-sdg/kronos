@@ -195,24 +195,49 @@ class KRNSTensorflow:
             )
 
     def predict(
-        self, n_days: int, fcst_first_date: datetime.date = datetime.date.today()
+        self,
+        n_days: int,
+        fcst_first_date: datetime.date = datetime.date.today(),
+        future_only: bool = True,
     ) -> pd.DataFrame:
         """
         Predict using the fitted model.
+
         Within the body of the function, the predict method is only called on newly trained models that are still in memory.
         For serialized models from the mlflow model register another prediction method is used.
 
+        Four situations can occur:
+            1. fcst_first_date <= last_training_day and difference < n_days (still something to forecast) - Note: all forecasts are predicted by the model.
+            2. fcst_first_date << last training day and difference >= n_days (nothing to forecast) - Note: all forecasts are predicted by the model.
+            3. fcst_first_date > last training day and some available intermediate data - Note: no update strategy, intermediate data is used to feed the model.
+            4. fcst_first_date > last training day and no intermediate data available.
+
+        Since the first step is to keep only historical data (data prior to fcst_first_date, i.e. difference must be at least 1), in each scenario all forecasts are predicted by the model in an autoregressive way by giving the last *n_inputs* of the historical data to the fitted model.
+
+        Finally, depending on the parameter *Modeler.future_only*, it is decided whether to keep only the observations from fcst_first_date onwards or also those in between.
+
         :param int n_days: Number of data points to predict.
         :param datetime.date fcst_first_date: First date of forecast.
+        :param bool future_only: Whether to return predicted missing values between the last observed date and the forecast first date (*False*) or only future values (*True*), i.e. those from the forecast first date onwards.
 
         :return: *(pd.DataFrame)* Pandas DataFrame containing the predictions.
         """
 
         try:
+
             # Keep only historic data
             historic_data = self.modeler.data[
                 self.modeler.data[self.modeler.date_col] < fcst_first_date
             ]
+
+            # Compute last observed historical day
+            last_observed_day = historic_data[self.modeler.date_col].max()
+
+            # Compute the difference between last_observed_day and fcst_first_date
+            difference = (fcst_first_date - last_observed_day).days
+
+            # Compute actual forecast horizon
+            fcst_horizon = difference + n_days - 1
 
             # Preprocess historic data
             historic_data = np.array(historic_data[self.modeler.metric_col])
@@ -222,7 +247,7 @@ class KRNSTensorflow:
             batch = historic_data.astype("float32")[-self.n_inputs :].reshape(
                 (1, self.n_inputs, 1)
             )
-            for i in range(n_days):
+            for i in range(fcst_horizon):
                 # Get the prediction value for the first batch: we need to differentiate when we directly use the model after training or when we load it from mlflow.
                 if type(self.model) == tf.keras.Sequential:
                     # Model directly used after training
@@ -242,12 +267,16 @@ class KRNSTensorflow:
             pred = pd.DataFrame(
                 data={
                     self.modeler.date_col: [
-                        fcst_first_date + datetime.timedelta(days=x)
-                        for x in range(n_days)
+                        last_observed_day + datetime.timedelta(days=x)
+                        for x in range(1, fcst_horizon + 1)
                     ],
                     self.modeler.fcst_col: predictions,
                 }
             )
+
+            # Keep only values from forecast first date onwards (if specified)
+            if future_only:
+                pred = pred[pred[self.modeler.date_col] >= fcst_first_date]
 
             return pred
 
