@@ -135,7 +135,7 @@ class KRNSProphet:
             )
         except Exception as e:
             logger.warning(
-                f"### Preprocess data failed: {e} - {self.modeler.train_data.head(1)}"
+                f"### Preprocess data failed: {e} - {self.modeler.data.head(1)}"
             )
 
         try:
@@ -314,7 +314,7 @@ class KRNSProphet:
                 self.preprocess()
 
             # Retrieve model last training day
-            last_training_day = self.model.history_dates[0].date()
+            last_training_day = self.model.history_dates.max().date()
 
             # Update model with last data (if any) and update last_training_day value
             n_update_rows = len(
@@ -328,7 +328,7 @@ class KRNSProphet:
                     self.modeler.data["ds"] < fcst_first_date
                 ]
                 self.model = self.update_model(df_update=update_data)
-                last_training_day = self.model.history_dates[0].date()
+                last_training_day = self.model.history_dates.max().date()
 
             # Compute the difference between last_training_day and fcst_first_date
             difference = (fcst_first_date - last_training_day).days

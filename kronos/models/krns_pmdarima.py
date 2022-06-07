@@ -240,14 +240,14 @@ class KRNSPmdarima:
                 pred = pd.concat([actual_data, pred])
                 pred.reset_index(drop=True, inplace=True)
 
-                # Keep relevant data
-                if future_only:
-                    pred = pred[pred[self.modeler.date_col] >= fcst_first_date]
-                if difference < 0:
-                    pred = pred[
-                        pred[self.modeler.date_col]
-                        < fcst_first_date + datetime.timedelta(days=n_days)
-                    ]
+            # Keep relevant data
+            if future_only:
+                pred = pred[pred[self.modeler.date_col] >= fcst_first_date]
+            if difference < 0:
+                pred = pred[
+                    pred[self.modeler.date_col]
+                    < fcst_first_date + datetime.timedelta(days=n_days)
+                ]
 
             return pred
 
