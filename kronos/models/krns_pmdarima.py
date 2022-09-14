@@ -65,7 +65,7 @@ class KRNSPmdarima:
         try:
             self.modeler.data.drop(
                 self.modeler.data.columns.difference(
-                    [self.modeler.date_col, self.modeler.metric_col]
+                    [self.modeler.date_col, self.modeler.metric_col] + self.modeler.x_reg_columns
                 ),
                 axis=1,
                 inplace=True,
@@ -79,7 +79,7 @@ class KRNSPmdarima:
         try:
             self.modeler.train_data.drop(
                 self.modeler.train_data.columns.difference(
-                    [self.modeler.date_col, self.modeler.metric_col]
+                    [self.modeler.date_col, self.modeler.metric_col] + self.modeler.x_reg_columns
                 ),
                 axis=1,
                 inplace=True,
@@ -93,7 +93,7 @@ class KRNSPmdarima:
         try:
             self.modeler.test_data.drop(
                 self.modeler.test_data.columns.difference(
-                    [self.modeler.date_col, self.modeler.metric_col]
+                    [self.modeler.date_col, self.modeler.metric_col] + self.modeler.x_reg_columns
                 ),
                 axis=1,
                 inplace=True,
@@ -147,7 +147,10 @@ class KRNSPmdarima:
         try:
             # Define the model
             self.model = pm.auto_arima(
-                self.modeler.train_data, seasonal=self.seasonal, m=self.m
+                y = self.modeler.train_data.loc[:,self.modeler.metric_col],
+                x = self.modeler.train_data.drop(self.modeler.metric_col, axis=1, inplace=False),
+                seasonal = self.seasonal,
+                m = self.m
             )
 
             # Add last training day attribute

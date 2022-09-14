@@ -28,6 +28,7 @@ def forecast_udf_gen(
     fcst_competition_metrics: list,
     fcst_competition_metric_weights: list,
     future_only: bool,
+    x_reg_columns: list,
 ):
     """
     A function used to create a pandas User Defined Function (UDF) with the specified parameters.
@@ -54,6 +55,7 @@ def forecast_udf_gen(
     :param list fcst_competition_metrics: List of metrics to be used in the competition.
     :param list fcst_competition_metric_weights: List of weights for metrics to be used in the competition.
     :param bool future_only: Whether to return predicted missing values between the last observed date and the forecast first date (*False*) or only future values (*True*), i.e. those from the forecast first date onwards.
+    :x_reg_columns list: A list of the variables to be used ax exogenous regressors.
 
     :return: A pandas UDF with the specified parameters as arguments.
 
@@ -136,6 +138,7 @@ def forecast_udf_gen(
             fcst_competition_metrics=fcst_competition_metrics,
             fcst_competition_metric_weights=fcst_competition_metric_weights,
             future_only=future_only,
+            x_reg_columns=x_reg_columns,
         )
 
         # TRAINING #####

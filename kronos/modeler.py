@@ -37,6 +37,7 @@ class Modeler:
         fcst_competition_metrics: list,
         fcst_competition_metric_weights: list,
         future_only: bool,
+        x_reg_columns: list,
     ) -> None:
         """
         Initialization method.
@@ -60,6 +61,7 @@ class Modeler:
         :param list fcst_competition_metrics: List of metrics to be used in the competition.
         :param list fcst_competition_metric_weights: List of weights for metrics to be used in the competition.
         :param bool future_only: Whether to return predicted missing values between the last observed date and the forecast first date (*False*) or only future values (*True*), i.e. those from the forecast first date onwards.
+        :param list x_reg_columns: List od exogenous regressor columns.
 
         :return: No return.
 
@@ -107,6 +109,7 @@ class Modeler:
         self.fcst_competition_metrics = fcst_competition_metrics
         self.fcst_competition_metric_weights = fcst_competition_metric_weights
         self.future_only = future_only
+        self.x_reg_columns = x_reg_columns
 
         # Defined attributes
         self.key_code = str(self.data[self.key_col].iloc[0])
