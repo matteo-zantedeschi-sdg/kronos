@@ -135,7 +135,7 @@ class Modeler:
         """
 
         try:
-            supported_metrics = ["rmse", "mape"]
+            supported_metrics = ["rmse", "mape", "max_perc_diff", "max_perc_diff_3_days"]
             out = {}
 
             for metric in metrics:
@@ -153,7 +153,23 @@ class Modeler:
                     if metric == "rmse":
                         value = ((actual - pred) ** 2).mean() ** 0.5
                     elif metric == "mape":
-                        value = (np.abs((actual - pred) / actual)).mean() * 100
+                        value = (np.abs((actual - pred) / actual+0.0001)).mean() * 100
+                    elif metric == "max_perc_diff":
+                        # identifico l'osservazione col massimo scarto
+                        idx_max = np.argmax(np.abs(actual))
+                        #estraggo actual e pred relativi e calcolo il delta perc
+                        act_val = actual[idx_max]
+                        pred_val = pred[idx_max]
+                        value = abs(((act_val - pred_val) / (act_val+0.0001)) * 100)
+                    elif metric == "max_perc_diff_3_days":
+                        # identifico l'osservazione col massimo scarto
+                        actual = actual[:3]
+                        pred = pred[:3]
+                        idx_max = np.argmax(np.abs(actual))
+                        # estraggo actual e pred relativi e calcolo il delta perc
+                        act_val = actual[idx_max]
+                        pred_val = pred[idx_max]
+                        value = abs(((act_val - pred_val) / (act_val + 0.0001)) * 100)
                     else:
                         value = np.Inf
 
