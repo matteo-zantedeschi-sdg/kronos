@@ -147,10 +147,10 @@ class KRNSPmdarima:
         try:
             # Define the model
             self.model = pm.auto_arima(
-                y = self.modeler.train_data.loc[:,self.modeler.metric_col],
-                x = self.modeler.train_data.drop(self.modeler.metric_col, axis=1, inplace=False),
-                seasonal = self.seasonal,
-                m = self.m
+                y=self.modeler.train_data.loc[:,self.modeler.metric_col],
+                exogenous=self.modeler.train_data[self.modeler.x_reg_columns].to_numpy(),
+                seasonal=self.seasonal,
+                m=self.m
             )
 
             # Add last training day attribute
@@ -166,6 +166,7 @@ class KRNSPmdarima:
         n_days: int,
         fcst_first_date: datetime.date = datetime.date.today(),
         future_only: bool = True,
+        test: bool = False,
     ) -> pd.DataFrame:
         """
         Predict using the fitted model.
@@ -181,6 +182,7 @@ class KRNSPmdarima:
         :param int n_days: Number of data points to predict.
         :param datetime.date fcst_first_date: First date of forecast.
         :param bool future_only: Whether to return predicted missing values between the last observed date and the forecast first date (*False*) or only future values (*True*), i.e. those from the forecast first date onwards.
+        :param bool test: Wheter to collect x-reg from test data, or from pred_data
 
         :return: *(pd.DataFrame)* Pandas DataFrame containing the predictions.
         """
@@ -199,7 +201,8 @@ class KRNSPmdarima:
                 & (self.modeler.data.index < fcst_first_date)
             ]
             if len(update_data) > 0:
-                self.model.update(update_data)
+                self.model.update(y=update_data[self.modeler.metric_col].to_numpy(),
+                                  x=update_data[self.modeler.x_reg_columns].to_numpy())
                 last_training_day = update_data.index.max()
 
             # Compute the difference between last_training_day and fcst_first_date
@@ -210,6 +213,12 @@ class KRNSPmdarima:
 
             # Make predictions
             if fcst_horizon > 0:
+
+                if test:
+                    exogenous = self.modeler.test_data[self.modeler.x_reg_columns].to_numpy()
+                else:
+                    exogenous = self.modeler.pred_data[self.modeler.x_reg_columns].to_numpy()
+
                 pred = pd.DataFrame(
                     data={
                         self.modeler.date_col: [
@@ -217,7 +226,8 @@ class KRNSPmdarima:
                             for x in range(1, fcst_horizon + 1)
                         ],
                         self.modeler.fcst_col: self.model.predict(
-                            n_periods=fcst_horizon
+                            n_periods=fcst_horizon,
+                            exogenous=exogenous
                         ),
                     }
                 )

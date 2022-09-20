@@ -297,6 +297,7 @@ class KRNSProphet:
         n_days: int,
         fcst_first_date: datetime.date = datetime.date.today(),
         future_only: bool = True,
+        test: bool = False,
     ) -> pd.DataFrame:
         """
         Predict using the fitted model.
@@ -312,6 +313,8 @@ class KRNSProphet:
         :param int n_days: Number of data points to predict.
         :param datetime.date fcst_first_date: First date of forecast.
         :param bool future_only: Whether to return predicted missing values between the last observed date and the forecast first date (*False*) or only future values (*True*), i.e. those from the forecast first date onwards.
+        :param bool test: Wheter to collect x-reg from test data, or from pred_data
+
 
         :return: *(pd.DataFrame)* Pandas DataFrame containing the predictions.
         """
