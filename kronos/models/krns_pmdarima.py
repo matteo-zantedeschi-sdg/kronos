@@ -202,7 +202,7 @@ class KRNSPmdarima:
             ]
             if len(update_data) > 0:
                 self.model.update(y=update_data[self.modeler.metric_col].to_numpy(),
-                                  x=update_data[self.modeler.x_reg_columns].to_numpy())
+                                  exogenous=update_data[self.modeler.x_reg_columns].to_numpy())
                 last_training_day = update_data.index.max()
 
             # Compute the difference between last_training_day and fcst_first_date
@@ -215,9 +215,9 @@ class KRNSPmdarima:
             if fcst_horizon > 0:
 
                 if test:
-                    exogenous = self.modeler.test_data[self.modeler.x_reg_columns].to_numpy()
+                    exogenous = self.modeler.test_data.sort_index()[self.modeler.x_reg_columns].to_numpy()
                 else:
-                    exogenous = self.modeler.pred_data[self.modeler.x_reg_columns].to_numpy()
+                    exogenous = self.modeler.pred_data.set_index([self.modeler.date_col]).sort_index()[self.modeler.x_reg_columns].to_numpy()
 
                 pred = pd.DataFrame(
                     data={

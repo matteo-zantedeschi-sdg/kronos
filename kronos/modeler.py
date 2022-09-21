@@ -257,19 +257,19 @@ class Modeler:
                     run = self.ml_flower.start_run(run_name=run_name)
 
                     # Store run id
-                    # run_id = run.info.run_id
+                    run_id = run.info.run_id
 
                     # Preprocess
                     model.preprocess()
 
                     # Log model params
-                    # model.log_params(client=self.ml_flower.client, run_id=run_id)
+                    model.log_params(client=self.ml_flower.client, run_id=run_id)
 
                     # Fit the model
                     model.fit()
 
                     # Log the model
-                    # model.log_model(artifact_path="model")
+                    model.log_model(artifact_path="model")
 
                     # Make predictions
                     test_data_first_date = self.test_data[self.date_col].min()
@@ -292,12 +292,11 @@ class Modeler:
                     self.df_performances.loc[model_name] = [
                         self.models_config[model_name],
                         model,
-                        # run_id,
-                        000,
+                        run_id,
                     ] + list(train_evals.values())
 
-                    # for key, val in train_evals.items():
-                    #     self.ml_flower.client.log_metric(run_id, key, val)
+                    for key, val in train_evals.items():
+                        self.ml_flower.client.log_metric(run_id, key, val)
 
                     self.ml_flower.end_run()
 
@@ -524,12 +523,12 @@ class Modeler:
 
         try:
             # Retrieve production model
-            # model, flavor = self.ml_flower.load_model(
-            #     model_uri=f"models:/{self.key_code}/Production"
-            # )
+            model, flavor = self.ml_flower.load_model(
+                model_uri=f"models:/{self.key_code}/Production"
+            )
 
-            flavor = self.models_config['pmdarima_1']['model_flavor']
-            model = self.df_performances['model'].pmdarima_1.model
+            #flavor = self.models_config['pmdarima_1']['model_flavor']
+            #model = self.df_performances['model'].pmdarima_1.model
 
             krns_model = self.model_generation(
                 model_flavor=flavor, model_config={}, trained_model=model
