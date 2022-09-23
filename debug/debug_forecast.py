@@ -39,7 +39,8 @@ forecast_udf = forecast_udf_gen(
     # models_config=ast.literal_eval(get_param("fcst_models_config")),
     #complete model dict
     # models_config= {"prophet_1":{"model_flavor":"prophet","interval_width":0.95,"growth":"logistic","yearly_seasonality":True,"weekly_seasonality":True,"daily_seasonality":False,"seasonality_mode":"multiplicative","floor":0,"country_holidays":"IT"},"prophet_2":{"model_flavor":"prophet","interval_width":0.95,"growth":"linear","yearly_seasonality":True,"weekly_seasonality":True,"daily_seasonality":False,"seasonality_mode":"additive","floor":0,"country_holidays":"IT"},"pmdarima_1":{"model_flavor":"pmdarima","m":7,"seasonal":True},"tensorflow_1":{"model_flavor":"tensorflow","nn_type":"rnn","n_units":128,"activation":"relu","epochs":10,"n_inputs":30}},
-    models_config= {"pmdarima_1":{"model_flavor":"pmdarima","m":7,"seasonal":True}},
+    models_config= {"prophet_1":{"model_flavor":"prophet","interval_width":0.95,"growth":"logistic","yearly_seasonality":True,"weekly_seasonality":True,"daily_seasonality":False,"seasonality_mode":"multiplicative","floor":0,"country_holidays":"IT"}},
+    # models_config= {"pmdarima_1":{"model_flavor":"pmdarima","m":7,"seasonal":True}},
     current_date=datetime.datetime.strptime('2022-02-06', '%Y-%m-%d').date(),
     fcst_first_date=datetime.datetime.strptime('2022-02-07', '%Y-%m-%d').date(),
     n_test=int(get_param("n_test")),
