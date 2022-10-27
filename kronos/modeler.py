@@ -527,11 +527,8 @@ class Modeler:
                 model_uri=f"models:/{self.key_code}/Production"
             )
 
-            # flavor = self.models_config['prophet_1']['model_flavor']
-            # model = self.df_performances['model'].prophet_1.model
-
-            # flavor = self.models_config['pmdarima_1']['model_flavor']
-            # model = self.df_performances['model'].pmdarima_1.model
+            #flavor = self.models_config['pmdarima_1']['model_flavor']
+            #model = self.df_performances['model'].pmdarima_1.model
 
             krns_model = self.model_generation(
                 model_flavor=flavor, model_config={}, trained_model=model

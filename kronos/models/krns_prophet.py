@@ -158,16 +158,6 @@ class KRNSProphet:
                 f"### Preprocess test data failed: {e} - {self.modeler.test_data.head(1)}"
             )
 
-        try:
-            self.modeler.pred_data.rename(
-                columns={self.modeler.date_col: "ds", self.modeler.metric_col: "y"},
-                inplace=True,
-            )
-        except Exception as e:
-            logger.warning(
-                f"### Preprocess pred data failed: {e} - {self.modeler.pred_data.head(1)}"
-            )
-
     def log_params(self, client: MlflowClient, run_id: str) -> None:
         """
         Log the model params to mlflow.
@@ -230,9 +220,6 @@ class KRNSProphet:
             # Add country holidays
             self.model.add_country_holidays(country_name=self.country_holidays)
 
-            # Add regressors
-            [self.model.add_regressor(i) for i in self.modeler.x_reg_columns]
-
             # Fit the model
             self.model.fit(self.modeler.train_data)
 
@@ -291,9 +278,6 @@ class KRNSProphet:
 
             # Add country holidays
             model.add_country_holidays(country_name=self.model.country_holidays)
-
-            # Add regressors
-            [model.add_regressor(i) for i in self.modeler.x_reg_columns]
 
             # Fit the model with warm start
             model.fit(df_update, init=self.stan_init(self.model))
@@ -377,21 +361,6 @@ class KRNSProphet:
             # Add floor and cap
             pred_config["floor"] = self.floor
             pred_config["cap"] = self.cap
-
-            # Add regressor
-            pred_config = pred_config.set_index('ds').sort_index()
-
-            list = copy.deepcopy(self.modeler.x_reg_columns)
-            list.append('ds')
-
-            if test:
-                regressor = self.modeler.test_data[list].set_index('ds').sort_index()
-            else:
-                regressor = self.modeler.pred_data[list].set_index('ds').sort_index()
-
-            pred_config = pred_config.join(regressor)
-
-            pred_config.reset_index(inplace=True)
 
             # Make predictions
             pred = self.model.predict(pred_config)
