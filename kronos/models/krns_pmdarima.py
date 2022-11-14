@@ -70,7 +70,8 @@ class KRNSPmdarima:
                 axis=1,
                 inplace=True,
             )
-            self.modeler.data.set_index(self.modeler.date_col, inplace=True)
+            if self.modeler.data.index.name != self.modeler.date_col:
+                self.modeler.data.set_index(self.modeler.date_col, inplace=True)
         except Exception as e:
             logger.warning(
                 f"### Preprocess data failed: {e} - {self.modeler.data.head(1)}"
@@ -84,7 +85,8 @@ class KRNSPmdarima:
                 axis=1,
                 inplace=True,
             )
-            self.modeler.train_data.set_index(self.modeler.date_col, inplace=True)
+            if self.modeler.train_data.index.name != self.modeler.date_col:
+                self.modeler.train_data.set_index(self.modeler.date_col, inplace=True)
         except Exception as e:
             logger.warning(
                 f"### Preprocess train data failed: {e} - {self.modeler.train_data.head(1)}"
@@ -98,7 +100,8 @@ class KRNSPmdarima:
                 axis=1,
                 inplace=True,
             )
-            self.modeler.test_data.set_index(self.modeler.date_col, inplace=True)
+            if self.modeler.test_data.index.name != self.modeler.date_col:
+                self.modeler.test_data.set_index(self.modeler.date_col, inplace=True)
         except Exception as e:
             logger.warning(
                 f"### Preprocess test data failed: {e} - {self.modeler.test_data.head(1)}"

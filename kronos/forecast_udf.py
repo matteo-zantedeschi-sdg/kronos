@@ -146,7 +146,9 @@ def forecast_udf_gen(
             modeler.training()
 
             prod_model_win = False
+            # testlocale
             modeler.prod_model_eval()
+            # testlocale
 
             if action == "competition":
                 modeler.competition()
@@ -158,6 +160,7 @@ def forecast_udf_gen(
                 modeler.deploy()
 
         # PREDICTION #####
+        #TODO: Modificare l'utilizzo di variabili esogene se c'è solo prediction
         pred = modeler.prediction()
 
         return pred

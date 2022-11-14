@@ -204,12 +204,17 @@ class Modeler:
                     f"### Not enough records to perform train/test split: {self.data.shape[0]} rows, {self.n_test} for test"
                 )
             else:
+                # self.train_data = self.data.sort_values(
+                #     by=[self.date_col], ascending=False
+                # ).iloc[self.n_test + self.fcst_horizon :, :]
                 self.train_data = self.data.sort_values(
                     by=[self.date_col], ascending=False
-                ).iloc[self.n_test + self.fcst_horizon :, :]
+                ).iloc[self.n_test + self.fcst_horizon + 2:, :]
                 self.test_data = self.data.sort_values(
                     by=[self.date_col], ascending=False
-                ).iloc[self.fcst_horizon: self.n_test + self.fcst_horizon, :]
+                    # aggiunti due giorni di lag perchè ogni giorno noi leggiamo i dati fino a due giorni prima per ogni pdr
+                ).iloc[self.fcst_horizon + 2: self.n_test + 2 + self.fcst_horizon, :]
+                # ).iloc[self.fcst_horizon : self.n_test + self.fcst_horizon, :]
                 self.pred_data = self.data.sort_values(
                     by=[self.date_col], ascending=False
                 ).iloc[:self.fcst_horizon, :]
@@ -320,6 +325,7 @@ class Modeler:
             model, flavor = self.ml_flower.load_model(
                 model_uri=f"models:/{self.key_code}/Production"
             )
+
             krns_model = self.model_generation(
                 model_flavor=flavor, model_config={}, trained_model=model
             )
@@ -332,6 +338,7 @@ class Modeler:
                 n_days=self.n_test,
                 fcst_first_date=test_data_first_date,
                 future_only=True,
+                test=True
             )
 
             # Compute rmse
@@ -426,6 +433,7 @@ class Modeler:
                 n_days=self.n_unit_test,
                 fcst_first_date=unit_test_fcst_first_date,
                 future_only=True,
+                test=True,
             )
 
             # Check quality
@@ -523,12 +531,14 @@ class Modeler:
 
         try:
             # Retrieve production model
+            #testlocale
             model, flavor = self.ml_flower.load_model(
-                model_uri=f"models:/{self.key_code}/Production"
-            )
+                 model_uri=f"models:/{self.key_code}/Production"
+             )
 
-            #flavor = self.models_config['pmdarima_1']['model_flavor']
-            #model = self.df_performances['model'].pmdarima_1.model
+            # flavor = self.models_config[self.winning_model_name]['model_flavor']
+            # model = self.df_performances['model'][self.winning_model_name].model
+            # testlocale
 
             krns_model = self.model_generation(
                 model_flavor=flavor, model_config={}, trained_model=model

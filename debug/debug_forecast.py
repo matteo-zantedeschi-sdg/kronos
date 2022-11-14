@@ -3,6 +3,7 @@ import sys
 import datetime
 from datetime import timedelta
 import json
+import kronos
 
 import pandas as pd
 import numpy as np
@@ -39,21 +40,22 @@ forecast_udf = forecast_udf_gen(
     # models_config=ast.literal_eval(get_param("fcst_models_config")),
     #complete model dict
     # models_config= {"prophet_1":{"model_flavor":"prophet","interval_width":0.95,"growth":"logistic","yearly_seasonality":True,"weekly_seasonality":True,"daily_seasonality":False,"seasonality_mode":"multiplicative","floor":0,"country_holidays":"IT"},"prophet_2":{"model_flavor":"prophet","interval_width":0.95,"growth":"linear","yearly_seasonality":True,"weekly_seasonality":True,"daily_seasonality":False,"seasonality_mode":"additive","floor":0,"country_holidays":"IT"},"pmdarima_1":{"model_flavor":"pmdarima","m":7,"seasonal":True},"tensorflow_1":{"model_flavor":"tensorflow","nn_type":"rnn","n_units":128,"activation":"relu","epochs":10,"n_inputs":30}},
-    models_config= {"prophet_1":{"model_flavor":"prophet","interval_width":0.95,"growth":"logistic","yearly_seasonality":True,"weekly_seasonality":True,"daily_seasonality":False,"seasonality_mode":"multiplicative","floor":0,"country_holidays":"IT"}},
-    # models_config= {"pmdarima_1":{"model_flavor":"pmdarima","m":7,"seasonal":True}},
-    current_date=datetime.datetime.strptime('2022-02-06', '%Y-%m-%d').date(),
-    fcst_first_date=datetime.datetime.strptime('2022-02-07', '%Y-%m-%d').date(),
+    # models_config= {"prophet_1":{"model_flavor":"prophet","interval_width":0.95,"growth":"logistic","yearly_seasonality":True,"weekly_seasonality":True,"daily_seasonality":False,"seasonality_mode":"multiplicative","floor":0,"country_holidays":"IT"}},
+    models_config= {"pmdarima_1":{"model_flavor":"pmdarima","m":7,"seasonal":True}},
+    # models_config= {"tensorflow_1":{"model_flavor":"tensorflow","nn_type":"rnn","n_units":128,"activation":"relu","epochs":10,"n_inputs":30}},
+    current_date=datetime.datetime.strptime('2022-10-27', '%Y-%m-%d').date(),
+    fcst_first_date=datetime.datetime.strptime('2022-10-28', '%Y-%m-%d').date(),
     n_test=int(get_param("n_test")),
     n_unit_test=int(get_param("n_unit_test")),
     fcst_horizon=int(get_param("pdr_fcst_horizon")),
     dt_creation_col=get_param("dt_creazione_col"),
     dt_reference_col=get_param("dt_riferimento_col"),
     # fcst_competition_metrics=get_param("fcst_competition_metrics"),
-    fcst_competition_metrics=['rmse', 'mape', 'max_perc_diff', 'max_perc_diff_3_days'],
+    fcst_competition_metrics=['max_perc_diff_3_days'],
     # fcst_competition_metric_weights=get_param("fcst_default_competition_metric_weights"),
-    fcst_competition_metric_weights=[0.25,0.25,0.25,0.25],
+    fcst_competition_metric_weights=[1],
     future_only=True,
-    x_reg_columns=['fine_settimana', 'festivita']
+    x_reg_columns=['sabato','domenica', 'festivita']
 )
 
 
@@ -71,10 +73,9 @@ result_schema = StructType([
 
 # read sample data
 
-df = pd.read_csv("C:/data/hera/df_test_fc.csv")
+df = pd.read_csv("C:/data/hera/df_03081000333586.csv")
 
 df['giorno_gas'] = df['giorno_gas'].apply(lambda x: datetime.datetime.strptime(x, '%Y-%m-%d').date())
-
 
 test = forecast_udf(df)
 
