@@ -3,6 +3,7 @@ from kronos.modeler import Modeler
 from mlflow.tracking import MlflowClient
 import pandas as pd
 import datetime
+from datetime import timedelta
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,11 +19,11 @@ def forecast_udf_gen(
     action_col: str,
     models_col: str,
     models_config: dict,
-    current_date: datetime.date,
-    fcst_first_date: datetime.date,
-    n_test: int,
-    n_unit_test: int,
-    fcst_horizon: int,
+    today_date: datetime.date,
+    # fcst_first_date: datetime.date,
+    # n_test: int,
+    # n_unit_test: int,
+    horizon: int,
     dt_creation_col: str,
     dt_reference_col: str,
     fcst_competition_metrics: list,
@@ -117,6 +118,13 @@ def forecast_udf_gen(
         action = data[action_col].iloc[0]
         quality = data[quality_col].iloc[0]
 
+        current_date = max(data[data[metric_col].notna()][date_col])
+        fcst_first_date = current_date + timedelta(days=1)
+        fcst_horizon = (datetime.date.today() + timedelta(days=horizon) - current_date).days
+        n_test = fcst_horizon
+        n_unit_test = n_test
+
+
         # Init an ml_flower instance
         ml_flower = MLFlower(client=client)
         # Init a modeler instance
@@ -133,6 +141,7 @@ def forecast_udf_gen(
             n_test=n_test,
             n_unit_test=n_unit_test,
             fcst_horizon=fcst_horizon,
+            horizon=horizon,
             dt_creation_col=dt_creation_col,
             dt_reference_col=dt_reference_col,
             fcst_competition_metrics=fcst_competition_metrics,
@@ -146,9 +155,9 @@ def forecast_udf_gen(
             modeler.training()
 
             prod_model_win = False
-            # testlocale
+
             modeler.prod_model_eval()
-            # testlocale
+
 
             if action == "competition":
                 modeler.competition()
@@ -162,6 +171,7 @@ def forecast_udf_gen(
         # PREDICTION #####
         #TODO: Modificare l'utilizzo di variabili esogene se c'è solo prediction
         pred = modeler.prediction()
+        pred = pred.tail(horizon)
 
         return pred
 

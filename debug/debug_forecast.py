@@ -17,6 +17,14 @@ def get_param(param_name):
 
 
 # get_param("n_test")
+# read sample data
+
+df = pd.read_csv("C:/data/hera/df_03081001057041.csv")
+
+df['year'] = df.giorno_gas.str[:4]
+df['giorno_gas'] = df['giorno_gas'].apply(lambda x: datetime.datetime.strptime(x, '%Y-%m-%d').date())
+
+
 
 
 from mlflow.tracking import MlflowClient
@@ -27,6 +35,9 @@ import mlflow
 client = MlflowClient()
 
 import ast
+
+
+
 
 forecast_udf = forecast_udf_gen(
     client=client,
@@ -39,25 +50,23 @@ forecast_udf = forecast_udf_gen(
     models_col=get_param("models_col"),
     # models_config=ast.literal_eval(get_param("fcst_models_config")),
     #complete model dict
-    # models_config= {"prophet_1":{"model_flavor":"prophet","interval_width":0.95,"growth":"logistic","yearly_seasonality":True,"weekly_seasonality":True,"daily_seasonality":False,"seasonality_mode":"multiplicative","floor":0,"country_holidays":"IT"},"prophet_2":{"model_flavor":"prophet","interval_width":0.95,"growth":"linear","yearly_seasonality":True,"weekly_seasonality":True,"daily_seasonality":False,"seasonality_mode":"additive","floor":0,"country_holidays":"IT"},"pmdarima_1":{"model_flavor":"pmdarima","m":7,"seasonal":True},"tensorflow_1":{"model_flavor":"tensorflow","nn_type":"rnn","n_units":128,"activation":"relu","epochs":10,"n_inputs":30}},
-    # models_config= {"prophet_1":{"model_flavor":"prophet","interval_width":0.95,"growth":"logistic","yearly_seasonality":True,"weekly_seasonality":True,"daily_seasonality":False,"seasonality_mode":"multiplicative","floor":0,"country_holidays":"IT"}},
-    models_config= {"pmdarima_1":{"model_flavor":"pmdarima","m":7,"seasonal":True}},
+    # models_config= {"prophet_1":{"model_flavor":"prophet","interval_width":0.95,"growth":"logistic","yearly_seasonality":True,"weekly_seasonality":True,"daily_seasonality":False,"seasonality_mode":"multiplicative","floor":0,"country_holidays":"IT"},"prophet_2":{"model_flavor":"prophet","interval_width":0.95,"growth":"linear","yearly_seasonality":True,"weekly_seasonality":True,"daily_seasonality":False,"seasonality_mode":"additive","floor":0,"country_holidays":"IT"},"pmdarima_1":{"model_flavor":"pmdarima","m":7,"seasonal":True}},
+    models_config= {"prophet_1":{"model_flavor":"prophet","interval_width":0.95,"growth":"logistic","yearly_seasonality":True,"weekly_seasonality":True,"daily_seasonality":False,"seasonality_mode":"multiplicative","floor":0,"country_holidays":"IT"}},
+    # models_config= {"pmdarima_1":{"model_flavor":"pmdarima","m":7,"seasonal":True}},
     # models_config= {"tensorflow_1":{"model_flavor":"tensorflow","nn_type":"rnn","n_units":128,"activation":"relu","epochs":10,"n_inputs":30}},
-    current_date=datetime.datetime.strptime('2022-10-27', '%Y-%m-%d').date(),
-    fcst_first_date=datetime.datetime.strptime('2022-10-28', '%Y-%m-%d').date(),
-    n_test=int(get_param("n_test")),
-    n_unit_test=int(get_param("n_unit_test")),
-    fcst_horizon=int(get_param("pdr_fcst_horizon")),
+    # current_date=datetime.datetime.strptime('2022-11-16', '%Y-%m-%d').date(),
+    today_date=datetime.date.today(),
+    # fcst_first_date=datetime.datetime.strptime('2022-11-17', '%Y-%m-%d').date(),
+    # fcst_horizon=int(get_param("pdr_fcst_horizon")),
+    horizon=5,
     dt_creation_col=get_param("dt_creazione_col"),
     dt_reference_col=get_param("dt_riferimento_col"),
-    # fcst_competition_metrics=get_param("fcst_competition_metrics"),
-    fcst_competition_metrics=['max_perc_diff_3_days'],
-    # fcst_competition_metric_weights=get_param("fcst_default_competition_metric_weights"),
-    fcst_competition_metric_weights=[1],
+    fcst_competition_metrics=['max_perc_diff_3_days', 'max_perc_diff'],
+    fcst_competition_metric_weights=[0.5, 0.5],
     future_only=True,
-    x_reg_columns=['sabato','domenica', 'festivita']
-)
-
+    x_reg_columns=['sabato','domenica','year', 'mean_temperatura', 'max_temperatura', 'min_temperatura', 'new_year', 'epiphany', 'local_holiday', 'easter_moday',
+                   'easter_sunday', 'liberation_day', 'labour_day', 'republic_day', 'assumption', 'all_saint', 'immaculate', 'christmas', 'boxing', 'lock_down',
+                   'Mon', 'Tue', 'Wed', 'Thu', 'Fri'])
 
 
 from pyspark.sql.types import StructType, StructField, DateType, FloatType, StringType
@@ -70,12 +79,6 @@ result_schema = StructType([
     StructField(get_param("dt_creazione_col"), DateType()),
     StructField(get_param("dt_riferimento_col"), DateType())
 ])
-
-# read sample data
-
-df = pd.read_csv("C:/data/hera/df_03081000333586.csv")
-
-df['giorno_gas'] = df['giorno_gas'].apply(lambda x: datetime.datetime.strptime(x, '%Y-%m-%d').date())
 
 test = forecast_udf(df)
 
