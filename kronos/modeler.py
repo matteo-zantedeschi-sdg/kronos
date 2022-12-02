@@ -107,6 +107,7 @@ class Modeler:
         self.n_test = n_test
         self.n_unit_test = n_unit_test
         self.fcst_horizon = fcst_horizon
+        self.horizon = horizon
         self.dt_creation_col = dt_creation_col
         self.dt_reference_col = dt_reference_col
         self.fcst_competition_metrics = fcst_competition_metrics

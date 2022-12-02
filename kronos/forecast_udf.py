@@ -120,7 +120,7 @@ def forecast_udf_gen(
 
         current_date = max(data[data[metric_col].notna()][date_col])
         fcst_first_date = current_date + timedelta(days=1)
-        fcst_horizon = (datetime.date.today() + timedelta(days=horizon) - current_date).days
+        fcst_horizon = (today_date + timedelta(days=horizon) - current_date).days
         n_test = fcst_horizon
         n_unit_test = n_test
 
