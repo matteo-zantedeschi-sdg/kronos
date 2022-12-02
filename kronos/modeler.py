@@ -1,11 +1,13 @@
-from kronos.models.krns_prophet import KRNSProphet
-from kronos.models.krns_pmdarima import KRNSPmdarima
-from kronos.models.krns_tensorflow import KRNSTensorflow
-from kronos.ml_flower import MLFlower
-import pandas as pd
-import numpy as np
-import logging
 import datetime
+import logging
+
+import numpy as np
+import pandas as pd
+
+from kronos.ml_flower import MLFlower
+from kronos.models.krns_pmdarima import KRNSPmdarima
+from kronos.models.krns_prophet import KRNSProphet
+from kronos.models.krns_tensorflow import KRNSTensorflow
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +140,12 @@ class Modeler:
         """
 
         try:
-            supported_metrics = ["rmse", "mape", "max_perc_diff", "max_perc_diff_3_days"]
+            supported_metrics = [
+                "rmse",
+                "mape",
+                "max_perc_diff",
+                "max_perc_diff_3_days",
+            ]
             out = {}
 
             for metric in metrics:
@@ -156,14 +163,14 @@ class Modeler:
                     if metric == "rmse":
                         value = ((actual - pred) ** 2).mean() ** 0.5
                     elif metric == "mape":
-                        value = (np.abs((actual - pred) / actual+0.0001)).mean() * 100
+                        value = (np.abs((actual - pred) / actual + 0.0001)).mean() * 100
                     elif metric == "max_perc_diff":
                         # identifico l'osservazione col massimo scarto
                         idx_max = np.argmax(np.abs(actual))
-                        #estraggo actual e pred relativi e calcolo il delta perc
+                        # estraggo actual e pred relativi e calcolo il delta perc
                         act_val = actual[idx_max]
                         pred_val = pred[idx_max]
-                        value = abs(((act_val - pred_val) / (act_val+0.0001)) * 100)
+                        value = abs(((act_val - pred_val) / (act_val + 0.0001)) * 100)
                     elif metric == "max_perc_diff_3_days":
                         # identifico l'osservazione col massimo scarto
                         actual = actual[:3]
@@ -209,15 +216,16 @@ class Modeler:
                 # ).iloc[self.n_test + self.fcst_horizon :, :]
                 self.train_data = self.data.sort_values(
                     by=[self.date_col], ascending=False
-                ).iloc[self.n_test + self.fcst_horizon + 2:, :]
+                ).iloc[self.n_test + self.fcst_horizon + 2 :, :]
                 self.test_data = self.data.sort_values(
-                    by=[self.date_col], ascending=False
+                    by=[self.date_col],
+                    ascending=False
                     # aggiunti due giorni di lag perchè ogni giorno noi leggiamo i dati fino a due giorni prima per ogni pdr
-                ).iloc[self.fcst_horizon + 2: self.n_test + 2 + self.fcst_horizon, :]
+                ).iloc[self.fcst_horizon + 2 : self.n_test + 2 + self.fcst_horizon, :]
                 # ).iloc[self.fcst_horizon : self.n_test + self.fcst_horizon, :]
                 self.pred_data = self.data.sort_values(
                     by=[self.date_col], ascending=False
-                ).iloc[:self.fcst_horizon, :]
+                ).iloc[: self.fcst_horizon, :]
                 logger.debug("### Train/test split completed.")
 
         except Exception as e:
@@ -282,7 +290,7 @@ class Modeler:
                         n_days=self.n_test,
                         fcst_first_date=test_data_first_date,
                         future_only=True,
-                        test=True
+                        test=True,
                     )
 
                     # Compute rmse and mape
@@ -338,7 +346,7 @@ class Modeler:
                 n_days=self.n_test,
                 fcst_first_date=test_data_first_date,
                 future_only=True,
-                test=True
+                test=True,
             )
 
             # Compute rmse
@@ -426,9 +434,7 @@ class Modeler:
             )
 
             # Predict with the model
-            unit_test_fcst_first_date = datetime.date.today() + datetime.timedelta(
-                days=1
-            )
+            unit_test_fcst_first_date = self.fcst_first_date
             pred = krns_model.predict(
                 n_days=self.n_unit_test,
                 fcst_first_date=unit_test_fcst_first_date,
@@ -531,10 +537,10 @@ class Modeler:
 
         try:
             # Retrieve production model
-            #testlocale
+            # testlocale
             model, flavor = self.ml_flower.load_model(
-                 model_uri=f"models:/{self.key_code}/Production"
-             )
+                model_uri=f"models:/{self.key_code}/Production"
+            )
 
             # flavor = self.models_config[self.winning_model_name]['model_flavor']
             # model = self.df_performances['model'][self.winning_model_name].model
@@ -549,7 +555,7 @@ class Modeler:
                 fcst_first_date=self.fcst_first_date,
                 n_days=self.fcst_horizon,
                 future_only=self.future_only,
-                test=False
+                test=False,
             )
 
             # Keep only relevant columns
