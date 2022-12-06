@@ -1,5 +1,6 @@
 from kronos.models.krns_prophet import KRNSProphet
 from kronos.models.krns_pmdarima import KRNSPmdarima
+from kronos.models.krns_lumpy import KRNSLumpy
 # from kronos.models.krns_tensorflow import KRNSTensorflow
 from kronos.ml_flower import MLFlower
 import pandas as pd
@@ -334,7 +335,7 @@ class Modeler:
             model, flavor = self.ml_flower.load_model(
                 model_uri=f"models:/{self.key_code}/Production"
             )
-            # model = self.df_performances.model.pmdarima_1.model
+            # model = self.df_performances.model.lumpy.model
             # flavor = list(list(self.models_config.values())[0].values())[0]
 
             # test locale
@@ -437,8 +438,8 @@ class Modeler:
             model, flavor = self.ml_flower.load_model(
                 model_uri=f"models:/{model_version_name}/{model_version_stage}"
             )
-            # model=self.df_performances.model.pmdarima_1.model
-            # flavor='pmdarima'
+            # model=self.df_performances.model.lumpy.model
+            # flavor='lumpy'
             # test_locale
             krns_model = self.model_generation(
                 model_flavor=flavor, model_config={}, trained_model=model
@@ -525,7 +526,7 @@ class Modeler:
                 model_version_stage=model_version.current_stage,
             )
 
-            # unit_test_status = self.unit_test(model_version_name='pmdarima', model_version_stage='production')
+            # unit_test_status = self.unit_test(model_version_name='lumpy', model_version_stage='production')
 
             # test locale
 
@@ -564,7 +565,7 @@ class Modeler:
                  model_uri=f"models:/{self.key_code}/Production"
              )
 
-            # self.winning_model_name = 'pmdarima_1'
+            # self.winning_model_name = 'lumpy'
             #
             # flavor = self.models_config[self.winning_model_name]['model_flavor']
             # model = self.df_performances['model'][self.winning_model_name].model
@@ -695,6 +696,24 @@ class Modeler:
                     modeler=self,
                     m=model_config.get("m", 7),
                     seasonal=model_config.get("seasonal", True),
+                    model=trained_model,
+                )
+            elif model_flavor == "lumpy":
+                model = KRNSLumpy(
+                    modeler=self,
+                    m=model_config.get("m", 1),
+                    start_P=model_config.get("start_P", 1),
+                    max_P = model_config.get("max_P", 1),
+                    start_D = model_config.get("start_D", 0),
+                    max_D = model_config.get("max_D", 0),
+                    start_Q = model_config.get("start_Q", 1),
+                    max_Q = model_config.get("max_Q", 1),
+                    start_p = model_config.get("start_p", 1),
+                    max_p = model_config.get("max_p", 1),
+                    start_d = model_config.get("start_d", 0),
+                    max_d = model_config.get("max_d", 1),
+                    start_q = model_config.get("start_q", 1),
+                    max_q = model_config.get("max_q", 1),
                     model=trained_model,
                 )
             # elif model_flavor == "tensorflow":
