@@ -5,11 +5,12 @@ import pandas as pd
 import logging
 import mlflow
 import datetime
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
 
-class KRNSProphet:
+class KRNSIntermittent:
     """
     Class to implement Prophet in kronos.
     """
@@ -22,10 +23,11 @@ class KRNSProphet:
         daily_seasonality: bool = False,
         weekly_seasonality: bool = True,
         yearly_seasonality: bool = True,
-        seasonality_mode: str = "multiplicative",
+        seasonality_mode: str = "additive",
         floor: int = None,
         cap: int = None,
         country_holidays: str = "IT",
+        condition_name: bool = True,
         model: Prophet = None,
     ) -> None:
         """
@@ -86,6 +88,9 @@ class KRNSProphet:
         self.country_holidays = (
             country_holidays if not model else model.country_holidays
         )
+        self.condition_name = (
+            condition_name if not model else model.condition_name
+        )
 
         # Floor/Cap
         if floor:
@@ -119,6 +124,7 @@ class KRNSProphet:
             "floor": self.floor,
             "cap": self.cap,
             "country_holidays": self.country_holidays,
+            "condition_name":self.condition_name,
         }
 
     def preprocess(self) -> None:
@@ -129,16 +135,26 @@ class KRNSProphet:
         """
 
         try:
+
+            var_array = self.modeler.data[self.modeler.metric_col].to_numpy()
+            var_array = var_array[~pd.isnull(var_array)]
+            thr_quantile = np.quantile(var_array, 0.05)
+            self.modeler.data['on_off'] = np.where(self.modeler.data[self.modeler.metric_col] > thr_quantile, 1, 0)
+
             self.modeler.data.rename(
                 columns={self.modeler.date_col: "ds", self.modeler.metric_col: "y"},
                 inplace=True,
             )
+
         except Exception as e:
             logger.warning(
                 f"### Preprocess data failed: {e} - {self.modeler.data.head(1)}"
             )
 
         try:
+
+            self.modeler.train_data['on_off'] = np.where(self.modeler.train_data[self.modeler.metric_col] > thr_quantile, 1, 0)
+
             self.modeler.train_data.rename(
                 columns={self.modeler.date_col: "ds", self.modeler.metric_col: "y"},
                 inplace=True,
@@ -149,6 +165,9 @@ class KRNSProphet:
             )
 
         try:
+
+            self.modeler.test_data['on_off'] = np.where(self.modeler.test_data[self.modeler.metric_col] > thr_quantile, 1, 0)
+
             self.modeler.test_data.rename(
                 columns={self.modeler.date_col: "ds", self.modeler.metric_col: "y"},
                 inplace=True,
@@ -219,6 +238,9 @@ class KRNSProphet:
 
             # Add country holidays
             self.model.add_country_holidays(country_name=self.country_holidays)
+
+            # Add seasonality on factor
+            self.model.add_seasonality(name='weekly_on', period=7, fourier_order=3, condition_name='on_off')
 
             # Fit the model
             self.model.fit(self.modeler.train_data)

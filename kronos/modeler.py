@@ -1,6 +1,8 @@
 from kronos.models.krns_prophet import KRNSProphet
 from kronos.models.krns_pmdarima import KRNSPmdarima
 from kronos.models.krns_lumpy import KRNSLumpy
+from kronos.models.krns_intermittent import KRNSIntermittent
+
 # from kronos.models.krns_tensorflow import KRNSTensorflow
 from kronos.ml_flower import MLFlower
 import pandas as pd
@@ -714,6 +716,23 @@ class Modeler:
                     max_d = model_config.get("max_d", 1),
                     start_q = model_config.get("start_q", 1),
                     max_q = model_config.get("max_q", 1),
+                    model=trained_model,
+                )
+            elif model_flavor == "intermittent":
+                model = KRNSIntermittent(
+                    modeler=self,
+                    interval_width=model_config.get("interval_width", 0.95),
+                    growth=model_config.get("growth", "linear"),
+                    daily_seasonality=model_config.get("daily_seasonality", False),
+                    weekly_seasonality=model_config.get("weekly_seasonality", True),
+                    yearly_seasonality=model_config.get("yearly_seasonality", True),
+                    seasonality_mode=model_config.get(
+                        "seasonality_mode", "multiplicative"
+                    ),
+                    floor=model_config.get("floor", None),
+                    cap=self.max_value,
+                    country_holidays=model_config.get("country_holidays", "IT"),
+                    condition_name=model_config.get("condition_name", True),
                     model=trained_model,
                 )
             # elif model_flavor == "tensorflow":
