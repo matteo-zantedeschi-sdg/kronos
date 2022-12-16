@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='kronos',
-    version='2.0.5',
+    version='2.0.6',
     packages=['kronos', 'kronos.models'],
     author='zantedeschim',
     author_email='matteo.zantedeschi@sdggroup.com',
