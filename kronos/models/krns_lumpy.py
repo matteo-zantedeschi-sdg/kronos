@@ -1,29 +1,40 @@
 from mlflow.tracking import MlflowClient
-from sklearn.linear_model import LinearRegression
-from sklearn.feature_selection import RFE
-import copy
+import mlflow
 import pmdarima as pm
 import pandas as pd
+import numpy as np
 import logging
-import mlflow
+import copy
 import datetime
+
 from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 
 
-class KRNSPmdarima:
+class KRNSLumpy:
     """
-    Class to implement pm.arima.arima.ARIMA in kronos.
+    Class to implement a specific forecats model for lumpy class in kronos.
     """
 
     def __init__(
             self,
-            modeler,  # TODO: How to explicit its data type without incur in [...] most likely due to a circular import
+            modeler,
             model: pm.arima.arima.ARIMA = None,
-            m: int = 7,
-            seasonal: bool = True,
             variables: list = None,
+            start_P: int = 1,
+            max_P: int = 1,
+            start_D: int = 0,
+            max_D: int = 0,
+            start_Q: int = 1,
+            max_Q: int = 1,
+            m: int = 1,
+            start_p: int = 1,
+            max_p: int = 1,
+            start_d: int = 0,
+            max_d: int = 1,
+            start_q: int = 1,
+            max_q: int = 1,
     ) -> None:
         """
         Initialization method.
@@ -50,14 +61,29 @@ class KRNSPmdarima:
         # Kronos attributes
         self.modeler = copy.deepcopy(modeler)
 
-        # Model attributes
-        self.m = m
-        self.seasonal = seasonal
-
         # To load an already configured model
         self.model = model
 
-        self.model_params = {"m": self.m, "seasonal": self.seasonal}
+        self.start_P = start_P
+        self.max_P = max_P
+        self.start_D = start_D
+        self.max_D = max_D
+        self.start_Q = start_Q
+        self.max_Q = max_Q
+        self.m = m
+        self.start_p = start_p
+        self.max_p = max_p
+        self.start_d = start_d
+        self.max_d = max_d
+        self.start_q = start_q
+        self.max_q = max_q
+
+        self.model_params = {"start_P": self.start_P, "max_P": self.max_P, "start_D": self.start_D, "max_D": self.max_D,
+                             "start_Q": self.start_Q, "max_Q": self.max_Q, "m": self.m, "start_p": self.start_p,
+                             "max_p": self.max_p, "start_d": self.start_d, "max_d": self.max_d, "start_q": self.start_q,
+                             "max_q": self.max_q}
+
+        self.variables = variables
 
     def preprocess(self) -> None:
         """
@@ -76,6 +102,9 @@ class KRNSPmdarima:
             )
             if self.modeler.data.index.name != self.modeler.date_col:
                 self.modeler.data.set_index(self.modeler.date_col, inplace=True)
+
+            self.modeler.data['on_off'] = np.where(self.modeler.data[self.modeler.metric_col] > 0, 1, 0)
+
         except Exception as e:
             logger.warning(
                 f"### Preprocess data failed: {e} - {self.modeler.data.head(1)}"
@@ -91,8 +120,12 @@ class KRNSPmdarima:
                 axis=1,
                 inplace=True,
             )
+
             if self.modeler.train_data.index.name != self.modeler.date_col:
                 self.modeler.train_data.set_index(self.modeler.date_col, inplace=True)
+
+            self.modeler.train_data['on_off'] = np.where(self.modeler.train_data[self.modeler.metric_col] > 0, 1, 0)
+
         except Exception as e:
             logger.warning(
                 f"### Preprocess train data failed: {e} - {self.modeler.train_data.head(1)}"
@@ -106,8 +139,12 @@ class KRNSPmdarima:
                 axis=1,
                 inplace=True,
             )
+
             if self.modeler.test_data.index.name != self.modeler.date_col:
                 self.modeler.test_data.set_index(self.modeler.date_col, inplace=True)
+
+            self.modeler.test_data['on_off'] = np.where(self.modeler.test_data[self.modeler.metric_col] > 0, 1, 0)
+
         except Exception as e:
             logger.warning(
                 f"### Preprocess test data failed: {e} - {self.modeler.test_data.head(1)}"
@@ -149,33 +186,26 @@ class KRNSPmdarima:
     def fit(self) -> None:
         """
         Instantiate the model class and fit the model.
-
         :return: No return.
         """
-        # TODO: Is it possible to add a max/min (saturating maximum and minimum) value during training.
         try:
-            # Find meaningful variable using linear regression
-
-            rfe = RFE(estimator=LinearRegression())
-
-            rfe.fit(self.modeler.train_data.drop(self.modeler.metric_col, axis=1),
-                    self.modeler.train_data[self.modeler.metric_col])
-
-            self.variables = list()
-
-            for i in range(self.modeler.train_data.drop(self.modeler.metric_col, axis=1).shape[1]):
-                if rfe.support_[i]:
-                    self.variables.append(self.modeler.train_data.drop(self.modeler.metric_col, axis=1).columns[i])
-
-            train_variables = self.modeler.train_data[self.variables]
-            train_variables = train_variables.apply(pd.to_numeric)
-
             # Define the model
             self.model = pm.auto_arima(
                 y=self.modeler.train_data.loc[:, self.modeler.metric_col],
-                exogenous=train_variables,
-                seasonal=self.seasonal,
-                m=self.m
+                exogenous=self.modeler.train_data[self.modeler.x_reg_columns],
+                start_P=self.start_P,
+                max_P=self.max_P,
+                start_D=self.start_D,
+                max_D=self.max_D,
+                start_Q=self.start_Q,
+                max_Q=self.max_Q,
+                m=self.m,
+                start_p=self.start_p,
+                max_p=self.max_p,
+                start_d=self.start_d,
+                max_d=self.max_d,
+                start_q=self.start_q,
+                max_q=self.max_q
             )
 
             # Add last training day attribute
@@ -228,7 +258,7 @@ class KRNSPmdarima:
                 & (self.modeler.data.index < fcst_first_date)
                 ]
             if len(update_data) > 0:
-                self.variables = self.model.arima_res_.model.exog_names
+                self.variables = self.modeler.x_reg_columns
 
                 self.model.update(y=update_data[self.modeler.metric_col].to_numpy(),
                                   exogenous=update_data[self.variables])
@@ -245,15 +275,12 @@ class KRNSPmdarima:
 
                 if test:
                     if self.variables is None:
-                        self.variables = self.model.arima_res_.model.exog_names
+                        self.variables = self.modeler.x_reg_columns
 
                     exogenous = self.modeler.test_data.sort_index()[self.variables]
                 else:
                     exogenous = self.modeler.pred_data.set_index([self.modeler.date_col]).sort_index()[self.variables]
 
-
-                # TODO: return_conf_int a True serve per considerare il 75esimo percentile della distribuzione prevista al posto della media--> impostare l'85esimo
-                #       è necessario modificare la funzione di predict di pmdarima
                 prediction = self.model.predict(
                     n_periods=fcst_horizon,
                     exogenous=exogenous,
@@ -301,6 +328,12 @@ class KRNSPmdarima:
                     pred[self.modeler.date_col]
                     < fcst_first_date + datetime.timedelta(days=n_days)
                     ]
+
+            pred['value_last_week'] = pred.apply(lambda x: self.modeler.data.loc[x.giorno_gas -timedelta(days=7)][self.modeler.metric_col], axis=1)
+
+            pred[self.modeler.fcst_col] = pred[[self.modeler.fcst_col, 'value_last_week']].max(axis=1)
+
+            pred = pred.drop(['value_last_week'], axis=1)
 
             return pred
 

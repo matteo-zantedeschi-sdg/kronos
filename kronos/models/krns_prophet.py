@@ -298,6 +298,8 @@ class KRNSProphet:
         fcst_first_date: datetime.date = datetime.date.today(),
         future_only: bool = True,
         test: bool = False,
+        return_conf_int: bool = True
+
     ) -> pd.DataFrame:
         """
         Predict using the fitted model.

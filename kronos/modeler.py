@@ -1,13 +1,14 @@
-import datetime
-import logging
-
-import numpy as np
-import pandas as pd
-
-from kronos.ml_flower import MLFlower
-from kronos.models.krns_pmdarima import KRNSPmdarima
 from kronos.models.krns_prophet import KRNSProphet
-from kronos.models.krns_tensorflow import KRNSTensorflow
+from kronos.models.krns_pmdarima import KRNSPmdarima
+from kronos.models.krns_lumpy import KRNSLumpy
+# TODO: Fix del modello tensorflow, per ora è commentato perchè non riuscivo a farlo eseguire in locale
+# from kronos.models.krns_tensorflow import KRNSTensorflow
+from kronos.ml_flower import MLFlower
+import pandas as pd
+import numpy as np
+import logging
+import datetime
+from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +18,7 @@ class Modeler:
     Class to manage all modelling activities.
     """
 
-    # TODO: fcst_competition_metric_weights è associato alle metriche su base posizionale, sarebbe meglio su base
-    #  del nome, tipo un dizionario
+    # TODO: fcst_competition_metric_weights è associato alle metriche su base posizionale, sarebbe meglio su base del nome, tipo un dizionario
 
     def __init__(
         self,
@@ -34,6 +34,7 @@ class Modeler:
         n_test: int,
         n_unit_test: int,
         fcst_horizon: int,
+        horizon: int,
         dt_creation_col: str,
         dt_reference_col: str,
         fcst_competition_metrics: list,
@@ -41,6 +42,7 @@ class Modeler:
         future_only: bool,
         x_reg_columns: list,
     ) -> None:
+
         """
         Initialization method.
 
@@ -106,6 +108,7 @@ class Modeler:
         self.n_test = n_test
         self.n_unit_test = n_unit_test
         self.fcst_horizon = fcst_horizon
+        self.horizon = horizon
         self.dt_creation_col = dt_creation_col
         self.dt_reference_col = dt_reference_col
         self.fcst_competition_metrics = fcst_competition_metrics
@@ -120,11 +123,14 @@ class Modeler:
         # Empty/placeholder attributes
         self.train_data = None
         self.test_data = None
+        self.pred_data = None
+
         self.df_performances = pd.DataFrame(
             columns=["model_name", "model_config", "model", "run_id"]
             + self.fcst_competition_metrics
         ).set_index("model_name")
         self.winning_model_name = None
+        self.variables = None
 
     @staticmethod
     def evaluate_model(actual: np.ndarray, pred: np.ndarray, metrics: list) -> dict:
@@ -140,12 +146,7 @@ class Modeler:
         """
 
         try:
-            supported_metrics = [
-                "rmse",
-                "mape",
-                "max_perc_diff",
-                "max_perc_diff_3_days",
-            ]
+            supported_metrics = ["rmse", "mape", "max_perc_diff", "max_perc_diff_3_days"]
             out = {}
 
             for metric in metrics:
@@ -163,22 +164,23 @@ class Modeler:
                     if metric == "rmse":
                         value = ((actual - pred) ** 2).mean() ** 0.5
                     elif metric == "mape":
-                        value = (np.abs((actual - pred) / actual + 0.0001)).mean() * 100
+                        value = (np.abs((actual - pred) / actual+0.0001)).mean() * 100
                     elif metric == "max_perc_diff":
                         # identifico l'osservazione col massimo scarto
                         idx_max = np.argmax(np.abs(actual))
                         # estraggo actual e pred relativi e calcolo il delta perc
                         act_val = actual[idx_max]
                         pred_val = pred[idx_max]
-                        value = abs(((act_val - pred_val) / (act_val + 0.0001)) * 100)
+                        value = abs(((act_val - pred_val) / (act_val+0.0001)) * 100)
                     elif metric == "max_perc_diff_3_days":
                         # identifico l'osservazione col massimo scarto
-                        actual = actual[:3]
-                        pred = pred[:3]
-                        idx_max = np.argmax(np.abs(actual))
+                        actual_3 = actual[:3]
+                        pred_3 = pred[:3]
+
+                        idx_max = np.argmax(np.abs(actual_3))
                         # estraggo actual e pred relativi e calcolo il delta perc
-                        act_val = actual[idx_max]
-                        pred_val = pred[idx_max]
+                        act_val = actual_3[idx_max]
+                        pred_val = pred_3[idx_max]
                         value = abs(((act_val - pred_val) / (act_val + 0.0001)) * 100)
                     else:
                         value = np.Inf
@@ -211,21 +213,17 @@ class Modeler:
                     f"### Not enough records to perform train/test split: {self.data.shape[0]} rows, {self.n_test} for test"
                 )
             else:
-                # self.train_data = self.data.sort_values(
-                #     by=[self.date_col], ascending=False
-                # ).iloc[self.n_test + self.fcst_horizon :, :]
                 self.train_data = self.data.sort_values(
                     by=[self.date_col], ascending=False
-                ).iloc[self.n_test + self.fcst_horizon + 2 :, :]
+                ).iloc[self.n_test + self.fcst_horizon:, :]
+
                 self.test_data = self.data.sort_values(
-                    by=[self.date_col],
-                    ascending=False
-                    # aggiunti due giorni di lag perchè ogni giorno noi leggiamo i dati fino a due giorni prima per ogni pdr
-                ).iloc[self.fcst_horizon + 2 : self.n_test + 2 + self.fcst_horizon, :]
-                # ).iloc[self.fcst_horizon : self.n_test + self.fcst_horizon, :]
+                    by=[self.date_col], ascending=False
+                ).iloc[self.fcst_horizon: self.n_test + self.fcst_horizon, :]
+
                 self.pred_data = self.data.sort_values(
                     by=[self.date_col], ascending=False
-                ).iloc[: self.fcst_horizon, :]
+                ).iloc[:self.fcst_horizon, :]
                 logger.debug("### Train/test split completed.")
 
         except Exception as e:
@@ -291,12 +289,15 @@ class Modeler:
                         fcst_first_date=test_data_first_date,
                         future_only=True,
                         test=True,
+                        return_conf_int=True
                     )
 
                     # Compute rmse and mape
+
                     train_evals = self.evaluate_model(
-                        actual=self.test_data[self.metric_col].values,
-                        pred=pred[self.fcst_col].values,
+                        # actual=self.test_data[self.metric_col].values,
+                        actual=self.test_data.sort_values(by=[self.date_col], ascending=True)[self.fcst_horizon - self.horizon:][self.metric_col].values,
+                        pred=pred.sort_values(by=[self.date_col], ascending=True)[self.fcst_horizon - self.horizon:][self.fcst_col].values,
                         metrics=self.fcst_competition_metrics,
                     )
 
@@ -347,6 +348,7 @@ class Modeler:
                 fcst_first_date=test_data_first_date,
                 future_only=True,
                 test=True,
+                return_conf_int=True,
             )
 
             # Compute rmse
@@ -429,17 +431,21 @@ class Modeler:
             model, flavor = self.ml_flower.load_model(
                 model_uri=f"models:/{model_version_name}/{model_version_stage}"
             )
+
             krns_model = self.model_generation(
                 model_flavor=flavor, model_config={}, trained_model=model
             )
 
             # Predict with the model
-            unit_test_fcst_first_date = self.fcst_first_date
+            unit_test_fcst_first_date = self.current_date + datetime.timedelta(
+                days=1
+            )
             pred = krns_model.predict(
                 n_days=self.n_unit_test,
                 fcst_first_date=unit_test_fcst_first_date,
                 future_only=True,
                 test=True,
+                return_conf_int=True,
             )
 
             # Check quality
@@ -480,6 +486,8 @@ class Modeler:
             # Register the model
             logger.info("### Registering the model")
             model_uri = f"runs:/{winning_model_run_id}/model"
+
+
             model_details = self.ml_flower.register_model(
                 model_uri=model_uri, model_name=self.key_code, timeout_s=10
             )
@@ -500,12 +508,15 @@ class Modeler:
                 archive_existing_versions=True,
             )
 
+
+
             # Unit test the model
             logger.info("### Performing model unit test")
             unit_test_status = self.unit_test(
                 model_version_name=model_version.name,
                 model_version_stage=model_version.current_stage,
             )
+
 
             if unit_test_status == "OK":
                 # Take the current staging model and promote it to production
@@ -537,14 +548,9 @@ class Modeler:
 
         try:
             # Retrieve production model
-            # testlocale
             model, flavor = self.ml_flower.load_model(
-                model_uri=f"models:/{self.key_code}/Production"
-            )
-
-            # flavor = self.models_config[self.winning_model_name]['model_flavor']
-            # model = self.df_performances['model'][self.winning_model_name].model
-            # testlocale
+                 model_uri=f"models:/{self.key_code}/Production"
+             )
 
             krns_model = self.model_generation(
                 model_flavor=flavor, model_config={}, trained_model=model
@@ -556,6 +562,7 @@ class Modeler:
                 n_days=self.fcst_horizon,
                 future_only=self.future_only,
                 test=False,
+                return_conf_int=True,
             )
 
             # Keep only relevant columns
@@ -597,8 +604,8 @@ class Modeler:
                 pred = pred[pred[self.date_col] >= self.fcst_first_date]
 
         # Add to predictions
-        pred[self.dt_reference_col] = self.fcst_first_date
-        pred[self.dt_creation_col] = self.current_date
+        pred[self.dt_reference_col] = datetime.date.today() + timedelta(days=1)
+        pred[self.dt_creation_col] = datetime.date.today()
 
         # Add key code to predictions
         pred[self.key_col] = self.key_code
@@ -672,16 +679,35 @@ class Modeler:
                     seasonal=model_config.get("seasonal", True),
                     model=trained_model,
                 )
-            elif model_flavor == "tensorflow":
-                model = KRNSTensorflow(
+            elif model_flavor == "lumpy":
+                model = KRNSLumpy(
                     modeler=self,
-                    nn_type=model_config.get("nn_type", "rnn"),
-                    n_units=model_config.get("n_units", 128),
-                    activation=model_config.get("activation", "relu"),
-                    epochs=model_config.get("epochs", 25),
-                    n_inputs=model_config.get("n_inputs", 30),
+                    m=model_config.get("m", 1),
+                    start_P=model_config.get("start_P", 1),
+                    max_P = model_config.get("max_P", 1),
+                    start_D = model_config.get("start_D", 0),
+                    max_D = model_config.get("max_D", 0),
+                    start_Q = model_config.get("start_Q", 1),
+                    max_Q = model_config.get("max_Q", 1),
+                    start_p = model_config.get("start_p", 1),
+                    max_p = model_config.get("max_p", 1),
+                    start_d = model_config.get("start_d", 0),
+                    max_d = model_config.get("max_d", 1),
+                    start_q = model_config.get("start_q", 1),
+                    max_q = model_config.get("max_q", 1),
                     model=trained_model,
                 )
+            # TODO: sbloccare tensorflow
+            # elif model_flavor == "tensorflow":
+            #     model = KRNSTensorflow(
+            #         modeler=self,
+            #         nn_type=model_config.get("nn_type", "rnn"),
+            #         n_units=model_config.get("n_units", 128),
+            #         activation=model_config.get("activation", "relu"),
+            #         epochs=model_config.get("epochs", 25),
+            #         n_inputs=model_config.get("n_inputs", 30),
+            #         model=trained_model,
+            #     )
             else:
                 raise ValueError(f"Model {model_flavor} not supported.")
 
