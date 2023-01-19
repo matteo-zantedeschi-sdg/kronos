@@ -1,10 +1,12 @@
+import datetime
+import logging
+from datetime import timedelta
+
+import pandas as pd
+from mlflow.tracking import MlflowClient
+
 from kronos.ml_flower import MLFlower
 from kronos.modeler import Modeler
-from mlflow.tracking import MlflowClient
-import pandas as pd
-import datetime
-from datetime import timedelta
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -118,9 +120,12 @@ def forecast_udf_gen(
         current_date = max(data[data[metric_col].notna()][date_col])
         fcst_first_date = current_date + timedelta(days=1)
         fcst_horizon = (today_date + timedelta(days=horizon) - current_date).days
-        n_test = fcst_horizon
-        n_unit_test = n_test
+        if fcst_horizon % 7 == 0:
+            n_test = fcst_horizon
+        else:
+            n_test = (fcst_horizon // 7 + 1) * 7
 
+        n_unit_test = fcst_horizon
 
         # Init an ml_flower instance
         ml_flower = MLFlower(client=client)
@@ -155,7 +160,6 @@ def forecast_udf_gen(
 
             modeler.prod_model_eval()
 
-
             if action == "competition":
                 modeler.competition()
                 if modeler.winning_model_name == "prod_model":
@@ -166,7 +170,7 @@ def forecast_udf_gen(
                 modeler.deploy()
 
         # PREDICTION #####
-        #TODO: Modificare l'utilizzo di variabili esogene se c'è solo prediction
+        # TODO: Modificare l'utilizzo di variabili esogene se c'è solo prediction
 
         pred = modeler.prediction()
 
