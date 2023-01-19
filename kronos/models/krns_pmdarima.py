@@ -1,13 +1,14 @@
-from mlflow.tracking import MlflowClient
-from sklearn.linear_model import LinearRegression
-from sklearn.feature_selection import RFE
 import copy
-import pmdarima as pm
-import pandas as pd
-import logging
-import mlflow
 import datetime
+import logging
 from datetime import timedelta
+
+import mlflow
+import pandas as pd
+import pmdarima as pm
+from mlflow.tracking import MlflowClient
+from sklearn.feature_selection import RFE
+from sklearn.linear_model import LinearRegression
 
 logger = logging.getLogger(__name__)
 
@@ -18,12 +19,13 @@ class KRNSPmdarima:
     """
 
     def __init__(
-            self,
-            modeler,  # TODO: How to explicit its data type without incur in [...] most likely due to a circular import
-            model: pm.arima.arima.ARIMA = None,
-            m: int = 7,
-            seasonal: bool = True,
-            variables: list = None,
+        self,
+        modeler,  # TODO: How to explicit its data type without incur in [...] most likely due to a circular import
+        model: pm.arima.arima.ARIMA = None,
+        m: int = 7,
+        seasonal: bool = True,
+        select_variables: bool = True,
+        variables: list = None,
     ) -> None:
         """
         Initialization method.
@@ -53,11 +55,18 @@ class KRNSPmdarima:
         # Model attributes
         self.m = m
         self.seasonal = seasonal
+        self.select_variables = select_variables
+
+        self.variables = variables
 
         # To load an already configured model
         self.model = model
 
-        self.model_params = {"m": self.m, "seasonal": self.seasonal}
+        self.model_params = {
+            "m": self.m,
+            "seasonal": self.seasonal,
+            "select_variables": self.select_variables,
+        }
 
     def preprocess(self) -> None:
         """
@@ -69,7 +78,8 @@ class KRNSPmdarima:
         try:
             self.modeler.data.drop(
                 self.modeler.data.columns.difference(
-                    [self.modeler.date_col, self.modeler.metric_col] + self.modeler.x_reg_columns
+                    [self.modeler.date_col, self.modeler.metric_col]
+                    + self.modeler.x_reg_columns
                 ),
                 axis=1,
                 inplace=True,
@@ -82,11 +92,15 @@ class KRNSPmdarima:
             )
 
         try:
-            self.modeler.train_data.dropna(subset=[self.modeler.metric_col], inplace=True, )
+            self.modeler.train_data.dropna(
+                subset=[self.modeler.metric_col],
+                inplace=True,
+            )
 
             self.modeler.train_data.drop(
                 self.modeler.train_data.columns.difference(
-                    [self.modeler.date_col, self.modeler.metric_col] + self.modeler.x_reg_columns
+                    [self.modeler.date_col, self.modeler.metric_col]
+                    + self.modeler.x_reg_columns
                 ),
                 axis=1,
                 inplace=True,
@@ -101,7 +115,8 @@ class KRNSPmdarima:
         try:
             self.modeler.test_data.drop(
                 self.modeler.test_data.columns.difference(
-                    [self.modeler.date_col, self.modeler.metric_col] + self.modeler.x_reg_columns
+                    [self.modeler.date_col, self.modeler.metric_col]
+                    + self.modeler.x_reg_columns
                 ),
                 axis=1,
                 inplace=True,
@@ -155,18 +170,33 @@ class KRNSPmdarima:
         # TODO: Is it possible to add a max/min (saturating maximum and minimum) value during training.
         try:
             # Find meaningful variable using linear regression
+            if self.select_variables:
+                rfe = RFE(estimator=LinearRegression())
 
-            rfe = RFE(estimator=LinearRegression())
+                rfe.fit(
+                    self.modeler.train_data.drop(self.modeler.metric_col, axis=1),
+                    self.modeler.train_data[self.modeler.metric_col],
+                )
 
-            rfe.fit(self.modeler.train_data.drop(self.modeler.metric_col, axis=1),
-                    self.modeler.train_data[self.modeler.metric_col])
+                self.variables = list()
 
-            self.variables = list()
-
-            for i in range(self.modeler.train_data.drop(self.modeler.metric_col, axis=1).shape[1]):
-                if rfe.support_[i]:
-                    self.variables.append(self.modeler.train_data.drop(self.modeler.metric_col, axis=1).columns[i])
-
+                for i in range(
+                    self.modeler.train_data.drop(self.modeler.metric_col, axis=1).shape[
+                        1
+                    ]
+                ):
+                    if rfe.support_[i]:
+                        self.variables.append(
+                            self.modeler.train_data.drop(
+                                self.modeler.metric_col, axis=1
+                            ).columns[i]
+                        )
+            else:
+                self.variables = list(
+                    self.modeler.train_data.drop(
+                        self.modeler.metric_col, axis=1
+                    ).columns
+                )
             train_variables = self.modeler.train_data[self.variables]
             train_variables = train_variables.apply(pd.to_numeric)
 
@@ -175,7 +205,7 @@ class KRNSPmdarima:
                 y=self.modeler.train_data.loc[:, self.modeler.metric_col],
                 exogenous=train_variables,
                 seasonal=self.seasonal,
-                m=self.m
+                m=self.m,
             )
 
             # Add last training day attribute
@@ -187,13 +217,12 @@ class KRNSPmdarima:
             )
 
     def predict(
-            self,
-            n_days: int,
-            fcst_first_date: datetime.date = datetime.date.today(),
-            future_only: bool = True,
-            test: bool = False,
-            return_conf_int: bool = True,
-
+        self,
+        n_days: int,
+        fcst_first_date: datetime.date = datetime.date.today(),
+        future_only: bool = True,
+        test: bool = False,
+        return_conf_int: bool = True,
     ) -> pd.DataFrame:
         """
         Predict using the fitted model.
@@ -226,12 +255,14 @@ class KRNSPmdarima:
             update_data = self.modeler.data[
                 (last_training_day < self.modeler.data.index)
                 & (self.modeler.data.index < fcst_first_date)
-                ]
+            ]
             if len(update_data) > 0:
                 self.variables = self.model.arima_res_.model.exog_names
 
-                self.model.update(y=update_data[self.modeler.metric_col].to_numpy(),
-                                  exogenous=update_data[self.variables])
+                self.model.update(
+                    y=update_data[self.modeler.metric_col].to_numpy(),
+                    exogenous=update_data[self.variables],
+                )
                 last_training_day = update_data.index.max()
 
             # Compute the difference between last_training_day and fcst_first_date
@@ -249,15 +280,14 @@ class KRNSPmdarima:
 
                     exogenous = self.modeler.test_data.sort_index()[self.variables]
                 else:
-                    exogenous = self.modeler.pred_data.set_index([self.modeler.date_col]).sort_index()[self.variables]
-
+                    exogenous = self.modeler.pred_data.set_index(
+                        [self.modeler.date_col]
+                    ).sort_index()[self.variables]
 
                 # TODO: return_conf_int a True serve per considerare il 75esimo percentile della distribuzione prevista al posto della media--> impostare l'85esimo
                 #       è necessario modificare la funzione di predict di pmdarima
                 prediction = self.model.predict(
-                    n_periods=fcst_horizon,
-                    exogenous=exogenous,
-                    return_conf_int=True
+                    n_periods=fcst_horizon, exogenous=exogenous, return_conf_int=True
                 )
 
                 pred = pd.DataFrame(
@@ -279,8 +309,8 @@ class KRNSPmdarima:
             if difference < 0:
                 # Keep last n actual data (n = difference - 1)
                 actual_data = self.modeler.data.sort_index(ascending=True).iloc[
-                              difference - 1:
-                              ]
+                    difference - 1 :
+                ]
                 # Reset index
                 actual_data.reset_index(inplace=True)
                 # Rename columns
@@ -300,7 +330,7 @@ class KRNSPmdarima:
                 pred = pred[
                     pred[self.modeler.date_col]
                     < fcst_first_date + datetime.timedelta(days=n_days)
-                    ]
+                ]
 
             return pred
 
