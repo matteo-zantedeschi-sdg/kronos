@@ -4,8 +4,10 @@ import logging
 from datetime import timedelta
 
 import mlflow
+import numpy as np
 import pandas as pd
 import pmdarima as pm
+import scipy.stats as sps
 from mlflow.tracking import MlflowClient
 from sklearn.feature_selection import RFE
 from sklearn.linear_model import LinearRegression
@@ -17,6 +19,8 @@ class KRNSPmdarima:
     """
     Class to implement pm.arima.arima.ARIMA in kronos.
     """
+
+    PREDICTION_METHODS = ["percentile_85", "Confidence_intervall"]
 
     def __init__(
         self,
@@ -56,7 +60,7 @@ class KRNSPmdarima:
         self.m = m
         self.seasonal = seasonal
         self.select_variables = select_variables
-
+        self._pred_method = None
         self.variables = variables
 
         # To load an already configured model
@@ -67,6 +71,15 @@ class KRNSPmdarima:
             "seasonal": self.seasonal,
             "select_variables": self.select_variables,
         }
+
+    @property
+    def pred_method(self):
+        return self._pred_method
+
+    @pred_method.setter
+    def pred_method(self, pred_meth):
+        self._pred_method = pred_meth
+        self.model_params["prediction_method"] = pred_meth
 
     def preprocess(self) -> None:
         """
@@ -206,6 +219,9 @@ class KRNSPmdarima:
                 exogenous=train_variables,
                 seasonal=self.seasonal,
                 m=self.m,
+                sarimax_kwargs={
+                    "enforce_stationarity": False,
+                },
             )
 
             # Add last training day attribute
@@ -287,18 +303,82 @@ class KRNSPmdarima:
                 # TODO: return_conf_int a True serve per considerare il 75esimo percentile della distribuzione prevista al posto della media--> impostare l'85esimo
                 #       è necessario modificare la funzione di predict di pmdarima
                 prediction = self.model.predict(
-                    n_periods=fcst_horizon, exogenous=exogenous, return_conf_int=True
+                    n_periods=fcst_horizon,
+                    exogenous=exogenous,
+                    return_conf_int=True,
+                    alpha=0.05,
                 )
 
-                pred = pd.DataFrame(
-                    data={
-                        self.modeler.date_col: [
-                            last_training_day + datetime.timedelta(days=x)
-                            for x in range(1, fcst_horizon + 1)
-                        ],
-                        self.modeler.fcst_col: [fcst[1] for fcst in prediction[1]],
-                    }
+                # is taken from the pmdarima.arima.Arima.predict()
+                # has been skiped some checks of the original implementation
+
+                arima = self.model.arima_res_
+                end = arima.nobs + fcst_horizon - 1
+                results = arima.get_prediction(
+                    start=arima.nobs, end=end, exog=exogenous
                 )
+
+                if isinstance(results.predicted_mean, pd.core.series.Series):
+                    # the results of get prediction (SARIMAX) puo essere suia pandas sia numpy
+                    mean = results.predicted_mean.to_numpy()
+                    variance = results.var_pred_mean.to_numpy()
+                else:
+                    mean = results.predicted_mean
+                    variance = results.var_pred_mean
+                    # compute the normal distribution for each prediction
+                    # use associated variances and mean
+                dists = [
+                    sps.norm(loc=m, scale=s)
+                    for m, s in zip(
+                        np.array(mean),
+                        np.sqrt(variance),
+                    )
+                ]
+                # Compute the 85 percentile of the normal distribution
+                prediction1 = [i.ppf(0.85) for i in dists]
+                # logger.info(f"### Predict with percentile 85")
+
+                prediction2 = self.model.predict(
+                    n_periods=fcst_horizon,
+                    exogenous=exogenous,
+                    return_conf_int=True,
+                )
+                prediction2 = [fcst[1] for fcst in prediction[1]]
+                # logger.info(f"### Predict with Confidnce intervall")
+
+                if not self.pred_method:
+                    pred = pd.DataFrame(
+                        data={
+                            self.modeler.date_col: [
+                                last_training_day + datetime.timedelta(days=x)
+                                for x in range(1, fcst_horizon + 1)
+                            ],
+                            self.modeler.fcst_col
+                            + self.PREDICTION_METHODS[0]: prediction1,
+                            self.modeler.fcst_col
+                            + self.PREDICTION_METHODS[1]: prediction2,
+                        }
+                    )
+                elif self.pred_method == self.PREDICTION_METHODS[0]:
+                    pred = pd.DataFrame(
+                        data={
+                            self.modeler.date_col: [
+                                last_training_day + datetime.timedelta(days=x)
+                                for x in range(1, fcst_horizon + 1)
+                            ],
+                            self.modeler.fcst_col: prediction1,
+                        }
+                    )
+                elif self.pred_method == self.PREDICTION_METHODS[1]:
+                    pred = pd.DataFrame(
+                        data={
+                            self.modeler.date_col: [
+                                last_training_day + datetime.timedelta(days=x)
+                                for x in range(1, fcst_horizon + 1)
+                            ],
+                            self.modeler.fcst_col: prediction2,
+                        }
+                    )
             else:
                 pred = pd.DataFrame(
                     data={self.modeler.date_col: [], self.modeler.fcst_col: []}

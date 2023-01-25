@@ -1,10 +1,11 @@
-from mlflow.tracking import MlflowClient
+import logging
+import time
+from typing import Optional
+
+import mlflow
 from mlflow.entities.model_registry import ModelVersion
 from mlflow.entities.model_registry.model_version_status import ModelVersionStatus
-from typing import Optional
-import mlflow
-import time
-import logging
+from mlflow.tracking import MlflowClient
 
 logger = logging.getLogger(__name__)
 
@@ -62,8 +63,8 @@ class MLFlower:
         except Exception as e:
             logger.error(f"### End of the run failed: {e}")
 
-    @staticmethod
-    def load_model(model_uri: str):
+    # @staticmethod
+    def load_model(self, model_uri: str):
         """
         Static method to load a model in Python function format from a specific uri.
         Based on its flavor (e.g. 'prophet') the model is later reloaded using the specific loader module.
@@ -88,6 +89,11 @@ class MLFlower:
                 model = mlflow.prophet.load_model(model_uri)
             elif loader_module == "mlflow.pmdarima":
                 model = mlflow.pmdarima.load_model(model_uri)
+                pred_method = self.client.get_run(
+                    pyfunc_model.metadata.run_id
+                ).data.params.get("prediction_method", "Confidence_intervall")
+                # print(pred_method)
+                model = (model, pred_method)
             elif loader_module == "mlflow.tensorflow":
                 model = mlflow.tensorflow.load_model(model_uri)
             else:
