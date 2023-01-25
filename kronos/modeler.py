@@ -2,15 +2,17 @@ import datetime
 import logging
 from datetime import timedelta
 
+import mlflow
 import numpy as np
 import pandas as pd
 
-# TODO: Fix del modello tensorflow, per ora è commentato perchè non riuscivo a farlo eseguire in locale
-# from kronos.models.krns_tensorflow import KRNSTensorflow
 from kronos.ml_flower import MLFlower
 from kronos.models.krns_lumpy import KRNSLumpy
 from kronos.models.krns_pmdarima import KRNSPmdarima
 from kronos.models.krns_prophet import KRNSProphet
+
+# TODO: Fix del modello tensorflow, per ora è commentato perchè non riuscivo a farlo eseguire in locale
+from kronos.models.krns_tensorflow import KRNSTensorflow
 
 logger = logging.getLogger(__name__)
 
@@ -400,7 +402,7 @@ class Modeler:
                     self.df_performances[metric].std(),
                 )
                 self.df_performances[metric] = self.df_performances[metric].apply(
-                    lambda x: x - mean / std
+                    lambda x: (x - mean) / std
                 )
 
             # Compute weighted average of all metrics
@@ -710,16 +712,16 @@ class Modeler:
                     model=trained_model,
                 )
             # TODO: sbloccare tensorflow
-            # elif model_flavor == "tensorflow":
-            #     model = KRNSTensorflow(
-            #         modeler=self,
-            #         nn_type=model_config.get("nn_type", "rnn"),
-            #         n_units=model_config.get("n_units", 128),
-            #         activation=model_config.get("activation", "relu"),
-            #         epochs=model_config.get("epochs", 25),
-            #         n_inputs=model_config.get("n_inputs", 30),
-            #         model=trained_model,
-            #     )
+            elif model_flavor == "tensorflow":
+                model = KRNSTensorflow(
+                    modeler=self,
+                    nn_type=model_config.get("nn_type", "rnn"),
+                    n_units=model_config.get("n_units", 128),
+                    activation=model_config.get("activation", "relu"),
+                    epochs=model_config.get("epochs", 25),
+                    n_inputs=model_config.get("n_inputs", 30),
+                    model=trained_model,
+                )
             else:
                 raise ValueError(f"Model {model_flavor} not supported.")
 

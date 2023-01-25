@@ -1,12 +1,13 @@
-from mlflow.tracking import MlflowClient
-import os
 import copy
-import tensorflow as tf
-import pandas as pd
-import numpy as np
-import logging
-import mlflow
 import datetime
+import logging
+import os
+
+import mlflow
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+from mlflow.tracking import MlflowClient
 
 logger = logging.getLogger(__name__)
 
@@ -203,6 +204,7 @@ class KRNSTensorflow:
         fcst_first_date: datetime.date = datetime.date.today(),
         future_only: bool = True,
         test: bool = False,
+        return_conf_int: bool = False,
     ) -> pd.DataFrame:
         """
         Predict using the fitted model.
