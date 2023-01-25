@@ -168,14 +168,20 @@ def forecast_udf_gen(
 
             if not prod_model_win:
                 modeler.deploy()
+        else:
+            pass
 
         # PREDICTION #####
         # TODO: Modificare l'utilizzo di variabili esogene se c'è solo prediction
 
-        pred = modeler.prediction()
-
-        pred = pred.tail(horizon)
-
-        return pred
+        if action in ["competition", "prediction"]:
+            logger.info("### Compute the prediction on the Prod model")
+            if action == "prediction":
+                modeler.train_test_split()
+            pred = modeler.prediction()
+            pred = pred.tail(horizon)
+            return pred
+        else:
+            return None
 
     return forecast_udf
