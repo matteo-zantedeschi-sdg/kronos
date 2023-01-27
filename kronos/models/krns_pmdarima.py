@@ -12,15 +12,17 @@ from mlflow.tracking import MlflowClient
 from sklearn.feature_selection import RFE
 from sklearn.linear_model import LinearRegression
 
+from kronos.models.krns_AbstractModel import AbstractModel
+
 logger = logging.getLogger(__name__)
 
 
-class KRNSPmdarima:
+class KRNSPmdarima(AbstractModel):
     """
     Class to implement pm.arima.arima.ARIMA in kronos.
     """
 
-    PREDICTION_METHODS = ["percentile_85", "Confidence_intervall"]
+    _PREDICTION_METHODS = ["percentile_85", "Confidence_intervall"]
 
     def __init__(
         self,
@@ -30,6 +32,7 @@ class KRNSPmdarima:
         seasonal: bool = True,
         select_variables: bool = True,
         variables: list = None,
+        pred_method=None,
     ) -> None:
         """
         Initialization method.
@@ -60,7 +63,7 @@ class KRNSPmdarima:
         self.m = m
         self.seasonal = seasonal
         self.select_variables = select_variables
-        self._pred_method = None
+        self._pred_method = pred_method
         self.variables = variables
 
         # To load an already configured model
@@ -70,6 +73,7 @@ class KRNSPmdarima:
             "m": self.m,
             "seasonal": self.seasonal,
             "select_variables": self.select_variables,
+            "prediction_method": self._pred_method,
         }
 
     @property
@@ -354,12 +358,12 @@ class KRNSPmdarima:
                                 for x in range(1, fcst_horizon + 1)
                             ],
                             self.modeler.fcst_col
-                            + self.PREDICTION_METHODS[0]: prediction1,
+                            + self._PREDICTION_METHODS[0]: prediction1,
                             self.modeler.fcst_col
-                            + self.PREDICTION_METHODS[1]: prediction2,
+                            + self._PREDICTION_METHODS[1]: prediction2,
                         }
                     )
-                elif self.pred_method == self.PREDICTION_METHODS[0]:
+                elif self.pred_method == self._PREDICTION_METHODS[0]:
                     pred = pd.DataFrame(
                         data={
                             self.modeler.date_col: [
@@ -369,7 +373,7 @@ class KRNSPmdarima:
                             self.modeler.fcst_col: prediction1,
                         }
                     )
-                elif self.pred_method == self.PREDICTION_METHODS[1]:
+                elif self.pred_method == self._PREDICTION_METHODS[1]:
                     pred = pd.DataFrame(
                         data={
                             self.modeler.date_col: [

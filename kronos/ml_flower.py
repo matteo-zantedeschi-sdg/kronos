@@ -63,6 +63,19 @@ class MLFlower:
         except Exception as e:
             logger.error(f"### End of the run failed: {e}")
 
+    def get_parameters(self, model_uri) -> dict:
+        try:
+            pyfunc_model = mlflow.pyfunc.load_model(model_uri)
+            res = self.client.get_run(pyfunc_model.metadata.run_id).data.params
+            for k, v in res.items():
+                try:
+                    res[k] = int(v)
+                except ValueError as ex:
+                    res[k] = v
+            return res
+        except Exception as e:
+            logger.error(f"### Parameters loading failed: {e}")
+
     # @staticmethod
     def load_model(self, model_uri: str):
         """
@@ -89,9 +102,9 @@ class MLFlower:
                 model = mlflow.prophet.load_model(model_uri)
             elif loader_module == "mlflow.pmdarima":
                 model = mlflow.pmdarima.load_model(model_uri)
-                pred_method = self.client.get_run(
-                    pyfunc_model.metadata.run_id
-                ).data.params.get("prediction_method", "Confidence_intervall")
+                pred_method = self.get_parameters(model_uri).get(
+                    "prediction_method", "Confidence_intervall"
+                )
                 # print(pred_method)
                 model = (model, pred_method)
             elif loader_module == "mlflow.tensorflow":

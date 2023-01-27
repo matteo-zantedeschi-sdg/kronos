@@ -304,19 +304,15 @@ class Modeler:
                         return_conf_int=True,
                     )
 
-                    if model_name.split("_")[0].lower() == "pmdarima":
-                        pred_method = model.PREDICTION_METHODS
-                    else:
-                        pred_method = [""]
-
-                    for _pred_method in pred_method:
-                        if model_name.split("_")[0].lower() == "pmdarima":
-                            model.pred_method = _pred_method
-                            if not mlflow.active_run():
-                                # Start run
-                                run_name = datetime.datetime.utcnow().isoformat()
-                                run = self.ml_flower.start_run(run_name=run_name)
-                                run_id = run.info.run_id
+                    for _pred_method in model.PREDICTION_METHODS:
+                        model.pred_method = (
+                            _pred_method if _pred_method != "" else model.pred_method
+                        )
+                        if not mlflow.active_run():
+                            # Start again run in the case of multiple prediction methods
+                            run_name = datetime.datetime.utcnow().isoformat()
+                            run = self.ml_flower.start_run(run_name=run_name)
+                            run_id = run.info.run_id
 
                         model.log_params(client=self.ml_flower.client, run_id=run_id)
                         model.log_model(artifact_path="model")
@@ -352,6 +348,40 @@ class Modeler:
 
         except Exception as e:
             logger.error(f"### Training failed: {e}")
+
+    def prod_model_training(self) -> None:
+        """
+        A method to perform all the training activities:
+
+            1. Define an mlflow experiment.
+            2. Perform train/test split of data.
+            3. Load P{roduction model and perfrm:
+
+                1. Start an mlflow run.
+                2. Preprocess data (*e.g. renaming columns in prophet models*).
+                3. Log model params in the mlflow run.
+                4. Fit the model.
+                5. Log the fitted model as artifact in the mlflow run.
+                6. Compute evaluation metrics and add them in a *performance dataframe* (to later compare models).
+                7. Log metrics in the mlflow run.
+                8. End run.
+
+        :return: No return.
+        """
+
+        try:
+            _, flavor = self.ml_flower.load_model(
+                model_uri=f"models:/{self.key_code}/Production"
+            )
+            model_config = self.ml_flower.get_parameters(
+                f"models:/{self.key_code}/Production"
+            )
+            self.models_config = {flavor + "_1": model_config}
+            self.training()
+            self.winning_model_name = flavor + "_1"
+
+        except Exception as e:
+            logger.error(f"### Training of the prod model failed: {e}")
 
     def prod_model_eval(self) -> None:
         """
@@ -707,15 +737,16 @@ class Modeler:
                     pred_method = trained_model[1]
                     trained_model = trained_model[0]
                 else:
-                    pred_method = None
+                    pred_method = model_config.get("prediction_method", None)
+
                 model = KRNSPmdarima(
                     modeler=self,
                     m=model_config.get("m", 7),
                     seasonal=model_config.get("seasonal", True),
                     model=trained_model,
                     select_variables=model_config.get("select_variables", True),
+                    pred_method=pred_method,
                 )
-                model.pred_method = pred_method
             elif model_flavor == "lumpy":
                 model = KRNSLumpy(
                     modeler=self,

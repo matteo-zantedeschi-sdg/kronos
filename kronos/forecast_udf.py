@@ -153,35 +153,36 @@ def forecast_udf_gen(
         )
 
         # TRAINING #####
-        if quality == "good" and action in ["competition", "training"]:
+        prod_model_win = True if action == "prediction" else False
+        if quality == "good" and action == "competition":
             modeler.training()
-
-            prod_model_win = False
 
             modeler.prod_model_eval()
 
-            if action == "competition":
-                modeler.competition()
-                if modeler.winning_model_name == "prod_model":
-                    prod_model_win = True
-                    logger.info("### Prod model is still winning.")
+            modeler.competition()
+            if modeler.winning_model_name == "prod_model":
+                prod_model_win = True
+                logger.info("### Prod model is still winning.")
 
-            if not prod_model_win:
-                modeler.deploy()
-        else:
-            pass
+        elif action == "training":
+            logger.info("### Retrain Prod model")
+            modeler.prod_model_training()
 
+        if not prod_model_win:
+            modeler.deploy()
         # PREDICTION #####
         # TODO: Modificare l'utilizzo di variabili esogene se c'è solo prediction
 
-        if action in ["competition", "prediction"]:
+        # if action in ["competition", "prediction"]:
+        if action == "prediction":
             logger.info("### Compute the prediction on the Prod model")
-            if action == "prediction":
-                modeler.train_test_split()
-            pred = modeler.prediction()
-            pred = pred.tail(horizon)
-            return pred
-        else:
-            return None
+            modeler.train_test_split()
+        pred = modeler.prediction()
+        pred = pred.tail(horizon)
+        return pred
+        # else:
+        #     return pd.DataFrame(
+        #         columns=[date_col, fcst_col, dt_reference_col, dt_creation_col, key_col]
+        #     )
 
     return forecast_udf

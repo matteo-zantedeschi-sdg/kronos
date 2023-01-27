@@ -1,15 +1,18 @@
-from prophet import Prophet
-from mlflow.tracking import MlflowClient
 import copy
-import pandas as pd
-import logging
-import mlflow
 import datetime
+import logging
+
+import mlflow
+import pandas as pd
+from mlflow.tracking import MlflowClient
+from prophet import Prophet
+
+from kronos.models.krns_AbstractModel import AbstractModel
 
 logger = logging.getLogger(__name__)
 
 
-class KRNSProphet:
+class KRNSProphet(AbstractModel):
     """
     Class to implement Prophet in kronos.
     """
@@ -298,8 +301,7 @@ class KRNSProphet:
         fcst_first_date: datetime.date = datetime.date.today(),
         future_only: bool = True,
         test: bool = False,
-        return_conf_int: bool = True
-
+        return_conf_int: bool = True,
     ) -> pd.DataFrame:
         """
         Predict using the fitted model.
