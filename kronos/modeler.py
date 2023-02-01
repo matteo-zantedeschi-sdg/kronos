@@ -370,6 +370,7 @@ class Modeler:
         """
 
         try:
+            logger.info("### Retrain Prod model")
             _, flavor = self.ml_flower.load_model(
                 model_uri=f"models:/{self.key_code}/Production"
             )
@@ -379,6 +380,7 @@ class Modeler:
             self.models_config = {flavor + "_1": model_config}
             self.training()
             self.winning_model_name = flavor + "_1"
+            # self.winning_model_name = "prod_model"
 
         except Exception as e:
             logger.error(f"### Training of the prod model failed: {e}")
@@ -597,7 +599,7 @@ class Modeler:
                 f"### Deployment of model {self.winning_model_name} failed: {e}"
             )
 
-    def prediction(self) -> pd.DataFrame:
+    def prediction(self, predict=False) -> pd.DataFrame:
         """
         Method to perform prediction using an mlflow model.
         The model is retrieved from the "Production" stage of the mlflow Model Registry, then it is used to provide the predictions.
@@ -607,10 +609,44 @@ class Modeler:
         """
 
         try:
-            # Retrieve production model
-            model, flavor = self.ml_flower.load_model(
-                model_uri=f"models:/{self.key_code}/Production"
-            )
+            try:
+                # Retrieve production model
+                model, flavor = self.ml_flower.load_model(
+                    model_uri=f"models:/{self.key_code}/Production"
+                )
+                model_config = self.ml_flower.get_parameters(
+                    f"models:/{self.key_code}/Production"
+                )
+                print(model_config)
+                print(list(self.models_config.values())[0])
+
+            except Exception as e:
+                logger.info(f"### Failed to load the model in production")
+                if predict:
+                    raise Exception("Critical: can not load production model")
+
+            core_model_fconfig = {
+                k: v
+                for k, v in list(self.models_config.values())[0].items()
+                if k != "model_flavor"
+            }
+
+            if predict and core_model_fconfig != model_config:
+                model_name = list(self.models_config.values())[0]["model_flavor"]
+
+                logger.info(f"### Train new {model_name} for prediction.")
+
+                self.training()
+
+                model_run_id = self.df_performances.loc[model_name]["run_di"]
+                model, flavor = self.ml_flower.load_model(
+                    model_uri=f"runs:/{model_run_id}/model"
+                )
+                self.winning_model_name = model_name
+            elif predict:
+                logger.info("### Compute the prediction on the Prod model")
+                self.train_test_split()
+                self.winning_model_name = "prod_model"
 
             krns_model = self.model_generation(
                 model_flavor=flavor, model_config={}, trained_model=model

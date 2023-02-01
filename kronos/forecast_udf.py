@@ -160,24 +160,33 @@ def forecast_udf_gen(
             modeler.prod_model_eval()
 
             modeler.competition()
-            if modeler.winning_model_name == "prod_model":
-                prod_model_win = True
-                logger.info("### Prod model is still winning.")
+            # if modeler.winning_model_name == "prod_model":
+            #     prod_model_win = True
+            #     logger.info("### Prod model is still winning.")
 
         elif action == "training":
-            logger.info("### Retrain Prod model")
             modeler.prod_model_training()
+        elif action == "prediction":
+            # perform training on the SINGLE model passed as argument in models_config
+            # in the case multiple models are presetn consider only firs one
+            # the configuration of the model MUST be complite(arima: specify explicitly the 'prediction_method')
+            pred = modeler.prediction(predict=True)
 
-        if not prod_model_win:
+        if not modeler.winning_model_name == "prod_model":
             modeler.deploy()
+            # prod_model_win = True
+        else:
+            logger.info("### Prod model is still winning.")
+
+        # if not prod_model_win:
+        #     modeler.deploy()
+
         # PREDICTION #####
         # TODO: Modificare l'utilizzo di variabili esogene se c'è solo prediction
 
         # if action in ["competition", "prediction"]:
-        if action == "prediction":
-            logger.info("### Compute the prediction on the Prod model")
-            modeler.train_test_split()
-        pred = modeler.prediction()
+        if action != "prediction":
+            pred = modeler.prediction()
         pred = pred.tail(horizon)
         return pred
         # else:

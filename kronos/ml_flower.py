@@ -64,14 +64,16 @@ class MLFlower:
             logger.error(f"### End of the run failed: {e}")
 
     def get_parameters(self, model_uri) -> dict:
+        import json
+
         try:
             pyfunc_model = mlflow.pyfunc.load_model(model_uri)
             res = self.client.get_run(pyfunc_model.metadata.run_id).data.params
-            for k, v in res.items():
+            for k, val in res.items():
                 try:
-                    res[k] = int(v)
-                except ValueError as ex:
-                    res[k] = v
+                    res[k] = json.loads(val.lower())
+                except ValueError:
+                    res[k] = val
             return res
         except Exception as e:
             logger.error(f"### Parameters loading failed: {e}")

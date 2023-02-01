@@ -80,6 +80,7 @@ param["FCST_MODELS_CONFIG"] = {
         "m": 7,
         "seasonal": True,
         "select_variables": True,
+        "prediction_method": "percentile_85",
     }
 }
 
@@ -177,8 +178,8 @@ df_arera_valid_fcst.loc[
 
 
 df_arera_valid_fcst[key_col] = df_arera_valid_fcst[key_col].astype("string") + "_test"
-# df_arera_valid_fcst[action_col] = "prediction"
-df_arera_valid_fcst[action_col] = "training"
+df_arera_valid_fcst[action_col] = "prediction"
+# df_arera_valid_fcst[action_col] = "training"
 # df_arera_valid_fcst[action_col] = "competition"
 
 
