@@ -19,11 +19,11 @@ def get_param(param_name):
     return ((df_param[df_param['chiave'] == (param_name.upper())]['valore']).values[0])
 
 
-df = pd.read_csv("C:/data/hera/df_03081000821915.csv")
+df = pd.read_csv("C:/data/hera/df_03081001598913.csv")
 
 df['year'] = df.giorno_gas.str[:4]
 df['giorno_gas'] = df['giorno_gas'].apply(lambda x: datetime.datetime.strptime(x, '%Y-%m-%d').date())
-
+df['classe_desc'] = 'smooth'
 
 
 
@@ -43,11 +43,11 @@ forecast_udf = forecast_udf_gen(
     # complete model dict
     # models_config= {"prophet_1":{"model_flavor":"prophet","interval_width":0.95,"growth":"logistic","yearly_seasonality":True,"weekly_seasonality":True,"daily_seasonality":False,"seasonality_mode":"multiplicative","floor":0,"country_holidays":"IT"},"prophet_2":{"model_flavor":"prophet","interval_width":0.95,"growth":"linear","yearly_seasonality":True,"weekly_seasonality":True,"daily_seasonality":False,"seasonality_mode":"additive","floor":0,"country_holidays":"IT"},"pmdarima_1":{"model_flavor":"pmdarima","m":7,"seasonal":True}},
     # models_config= {"prophet_1":{"model_flavor":"prophet","interval_width":0.95,"growth":"logistic","yearly_seasonality":True,"weekly_seasonality":True,"daily_seasonality":False,"seasonality_mode":"multiplicative","floor":0,"country_holidays":"IT"}},
-    # models_config= {"pmdarima_1":{"model_flavor":"pmdarima","m":7,"seasonal":True}},
-    models_config= {"lumpy":{"model_flavor":"lumpy", "start_P": 1, "max_P": 1, "start_D": 0, "max_D": 0, "start_Q": 1, "max_Q": 1, "m": 1, "start_p": 1, "max_p": 1, "start_d": 0, "max_d": 1, "start_q": 1, "max_q": 1}},
+    models_config= {"pmdarima_1":{"model_flavor":"pmdarima","m":7,"seasonal":True}},
+    # models_config= {"lumpy":{"model_flavor":"lumpy", "start_P": 1, "max_P": 1, "start_D": 0, "max_D": 0, "start_Q": 1, "max_Q": 1, "m": 1, "start_p": 1, "max_p": 1, "start_d": 0, "max_d": 1, "start_q": 1, "max_q": 1}},
     # models_config= {"tensorflow_1":{"model_flavor":"tensorflow","nn_type":"rnn","n_units":128,"activation":"relu","epochs":10,"n_inputs":30}},
     # current_date=datetime.datetime.strptime('2022-11-16', '%Y-%m-%d').date(),
-    today_date=datetime.date.today(),
+    today_date=datetime.datetime.strptime('2023-01-17', '%Y-%m-%d').date(),
     # fcst_first_date=datetime.datetime.strptime('2022-11-17', '%Y-%m-%d').date(),
     # fcst_horizon=int(get_param("pdr_fcst_horizon")),
     horizon=5,
@@ -56,7 +56,9 @@ forecast_udf = forecast_udf_gen(
     fcst_competition_metrics=['max_perc_diff_3_days', 'max_perc_diff'],
     fcst_competition_metric_weights=[0.5, 0.5],
     future_only=True,
-    x_reg_columns=['mean_temperatura'])
+    x_reg_columns=['sabato','domenica','year', 'mean_temperatura', 'max_temperatura', 'min_temperatura', 'new_year', 'epiphany', 'local_holiday', 'easter_moday',
+                   'easter_sunday', 'liberation_day', 'labour_day', 'republic_day', 'assumption', 'all_saint', 'immaculate', 'christmas', 'boxing', 'lock_down',
+                   'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'FOURIER_S365-0', 'FOURIER_C365-0'])
 
 
 

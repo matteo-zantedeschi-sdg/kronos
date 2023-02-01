@@ -182,6 +182,14 @@ class KRNSPmdarima:
         """
         # TODO: Is it possible to add a max/min (saturating maximum and minimum) value during training.
         try:
+
+            #TODO: parametrizzare nome colonna FOURIER_C365-0
+            if 'FOURIER_S365-0' in self.modeler.train_data.columns:
+                fouriers = self.modeler.train_data.loc[:,['FOURIER_S365-0', 'FOURIER_C365-0']]
+                self.modeler.train_data = self.modeler.train_data.drop(fouriers.columns[0], axis=1).drop(fouriers.columns[1], axis=1)
+            else:
+                fouriers = None
+
             # Find meaningful variable using linear regression
             if self.select_variables:
                 rfe = RFE(estimator=LinearRegression())
@@ -204,14 +212,25 @@ class KRNSPmdarima:
                                 self.modeler.metric_col, axis=1
                             ).columns[i]
                         )
+
             else:
                 self.variables = list(
                     self.modeler.train_data.drop(
                         self.modeler.metric_col, axis=1
                     ).columns
                 )
+
+
             train_variables = self.modeler.train_data[self.variables]
+
+            if not (fouriers is None):
+                self.variables = self.variables + list(fouriers.columns)
+
             train_variables = train_variables.apply(pd.to_numeric)
+
+            if not (fouriers is None):
+                self.modeler.train_data = self.modeler.train_data.join(fouriers)
+                train_variables = train_variables.join(fouriers)
 
             # Define the model
             self.model = pm.auto_arima(

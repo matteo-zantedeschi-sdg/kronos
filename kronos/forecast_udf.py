@@ -4,6 +4,7 @@ from datetime import timedelta
 
 import pandas as pd
 from mlflow.tracking import MlflowClient
+from pmdarima.preprocessing import FourierFeaturizer
 
 from kronos.ml_flower import MLFlower
 from kronos.modeler import Modeler
@@ -126,6 +127,17 @@ def forecast_udf_gen(
             n_test = (fcst_horizon // 7 + 1) * 7
 
         n_unit_test = fcst_horizon
+
+        if data['classe_desc'][0] == 'smooth' or data['classe_desc'][0] == 'erratic':
+            # Annual seasonality covered by fourier terms
+            four_terms = FourierFeaturizer(365.25, 1)
+            y_prime, exog = four_terms.fit_transform(data.loc[:, metric_col])
+            exog['index'] = y_prime.index  # is exactly the same as manual calculation in the above cells
+            exog = exog.set_index(exog['index'])
+            exog.index.freq = 'D'
+            exog = exog.drop(columns=['index'])
+
+            data = data.join(exog)
 
         # Init an ml_flower instance
         ml_flower = MLFlower(client=client)
