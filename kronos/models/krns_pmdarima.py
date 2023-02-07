@@ -60,7 +60,7 @@ class KRNSPmdarima:
         self.m = m
         self.seasonal = seasonal
         self.select_variables = select_variables
-        self._pred_method = None
+        # self._pred_method = None
         self.variables = variables
 
         # To load an already configured model
@@ -72,14 +72,14 @@ class KRNSPmdarima:
             "select_variables": self.select_variables,
         }
 
-    @property
-    def pred_method(self):
-        return self._pred_method
+    # @property
+    # def pred_method(self):
+    #     return self._pred_method
 
-    @pred_method.setter
-    def pred_method(self, pred_meth):
-        self._pred_method = pred_meth
-        self.model_params["prediction_method"] = pred_meth
+    # @pred_method.setter
+    # def pred_method(self, pred_meth):
+    #     self._pred_method = pred_meth
+    #     self.model_params["prediction_method"] = pred_meth
 
     def preprocess(self) -> None:
         """
@@ -183,10 +183,14 @@ class KRNSPmdarima:
         # TODO: Is it possible to add a max/min (saturating maximum and minimum) value during training.
         try:
 
-            #TODO: parametrizzare nome colonna FOURIER_C365-0
-            if 'FOURIER_S365-0' in self.modeler.train_data.columns:
-                fouriers = self.modeler.train_data.loc[:,['FOURIER_S365-0', 'FOURIER_C365-0']]
-                self.modeler.train_data = self.modeler.train_data.drop(fouriers.columns[0], axis=1).drop(fouriers.columns[1], axis=1)
+            # TODO: parametrizzare nome colonna FOURIER_C365-0
+            if "FOURIER_S365-0" in self.modeler.train_data.columns:
+                fouriers = self.modeler.train_data.loc[
+                    :, ["FOURIER_S365-0", "FOURIER_C365-0"]
+                ]
+                self.modeler.train_data = self.modeler.train_data.drop(
+                    fouriers.columns[0], axis=1
+                ).drop(fouriers.columns[1], axis=1)
             else:
                 fouriers = None
 
@@ -219,7 +223,6 @@ class KRNSPmdarima:
                         self.modeler.metric_col, axis=1
                     ).columns
                 )
-
 
             train_variables = self.modeler.train_data[self.variables]
 
@@ -328,79 +331,16 @@ class KRNSPmdarima:
                     alpha=0.05,
                 )
 
-                # is taken from the pmdarima.arima.Arima.predict()
-                # has been skiped some checks of the original implementation
-
-                arima = self.model.arima_res_
-                end = arima.nobs + fcst_horizon - 1
-                results = arima.get_prediction(
-                    start=arima.nobs, end=end, exog=exogenous
-                )
-
-                if isinstance(results.predicted_mean, pd.core.series.Series):
-                    # the results of get prediction (SARIMAX) puo essere suia pandas sia numpy
-                    mean = results.predicted_mean.to_numpy()
-                    variance = results.var_pred_mean.to_numpy()
-                else:
-                    mean = results.predicted_mean
-                    variance = results.var_pred_mean
-                    # compute the normal distribution for each prediction
-                    # use associated variances and mean
-                dists = [
-                    sps.norm(loc=m, scale=s)
-                    for m, s in zip(
-                        np.array(mean),
-                        np.sqrt(variance),
-                    )
-                ]
-                # Compute the 85 percentile of the normal distribution
-                prediction1 = [i.ppf(0.85) for i in dists]
-                # logger.info(f"### Predict with percentile 85")
-
-                prediction2 = self.model.predict(
-                    n_periods=fcst_horizon,
-                    exogenous=exogenous,
-                    return_conf_int=True,
-                )
                 prediction2 = [fcst[1] for fcst in prediction[1]]
-                # logger.info(f"### Predict with Confidnce intervall")
 
-                if not self.pred_method:
-                    pred = pd.DataFrame(
-                        data={
-                            self.modeler.date_col: [
-                                last_training_day + datetime.timedelta(days=x)
-                                for x in range(1, fcst_horizon + 1)
-                            ],
-                            self.modeler.fcst_col
-                            + self.PREDICTION_METHODS[0]: prediction1,
-                            self.modeler.fcst_col
-                            + self.PREDICTION_METHODS[1]: prediction2,
-                        }
-                    )
-                elif self.pred_method == self.PREDICTION_METHODS[0]:
-                    pred = pd.DataFrame(
-                        data={
-                            self.modeler.date_col: [
-                                last_training_day + datetime.timedelta(days=x)
-                                for x in range(1, fcst_horizon + 1)
-                            ],
-                            self.modeler.fcst_col: prediction1,
-                        }
-                    )
-                elif self.pred_method == self.PREDICTION_METHODS[1]:
-                    pred = pd.DataFrame(
-                        data={
-                            self.modeler.date_col: [
-                                last_training_day + datetime.timedelta(days=x)
-                                for x in range(1, fcst_horizon + 1)
-                            ],
-                            self.modeler.fcst_col: prediction2,
-                        }
-                    )
-            else:
                 pred = pd.DataFrame(
-                    data={self.modeler.date_col: [], self.modeler.fcst_col: []}
+                    data={
+                        self.modeler.date_col: [
+                            last_training_day + datetime.timedelta(days=x)
+                            for x in range(1, fcst_horizon + 1)
+                        ],
+                        self.modeler.fcst_col: prediction2,
+                    }
                 )
 
             # Attach actual data on predictions

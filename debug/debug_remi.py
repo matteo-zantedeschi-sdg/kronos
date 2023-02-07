@@ -8,7 +8,8 @@ sys.path.append("/home/leon/Doc/programm/SDG/hera/kronos/")
 from kronos.forecast_udf import forecast_udf_gen
 
 pd_arera_valid = pd.read_csv(
-    "/home/leon/Doc/programm/SDG/hera/fcst_local/df_arera_valid_es.csv"
+    # "/home/leon/Doc/programm/SDG/hera/fcst_local/df_arera_valid_es.csv"
+    "/home/leon/Doc/programm/SDG/hera/fcst_local/pdr.csv"
 )
 param = (
     pd.read_csv("/home/leon/Doc/programm/SDG/hera/fcst_local/param.csv")
@@ -135,13 +136,14 @@ fcst_competition_metric_weights = [
 ]
 
 
-arr = ["G_35524", "G_114065", "G_114114", "G_38138"]
-# i_r = 3
-i_r = 2
+# arr = ["G_35524", "G_114065", "G_114114", "G_38138"]
+# # i_r = 3
+# i_r = 2
 
-print(arr[i_r])
+# print(arr[i_r])
 
-df_single_arera = pd_arera_valid[(pd_arera_valid["arera"] == arr[i_r])].copy(deep=True)
+# df_single_arera = pd_arera_valid[(pd_arera_valid["arera"] == arr[i_r])].copy(deep=True)
+df_single_arera = pd_arera_valid.copy(deep=True)
 
 df_single_arera["ts_battuta"] = [
     datetime.fromisoformat(i).date() for i in df_single_arera["ts_battuta"]

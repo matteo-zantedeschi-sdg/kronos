@@ -109,7 +109,6 @@ def forecast_udf_gen(
             df_pred = df.groupby(partition_key).applyInPandas(forecast_udf, schema=result_schema)
 
         """
-
         # Retrieve key (to later add to the output)
         key_code = str(data[key_col].iloc[0])
         logger.info(f"### Working on pdr {key_code}")
@@ -128,14 +127,18 @@ def forecast_udf_gen(
 
         n_unit_test = fcst_horizon
 
-        if data['classe_desc'][0] == 'smooth' or data['classe_desc'][0] == 'erratic':
+        if data["classe_desc"][0] == "smooth" or data["classe_desc"][0] == "erratic":
             # Annual seasonality covered by fourier terms
             four_terms = FourierFeaturizer(365.25, 1)
             y_prime, exog = four_terms.fit_transform(data.loc[:, metric_col])
-            exog['index'] = y_prime.index  # is exactly the same as manual calculation in the above cells
-            exog = exog.set_index(exog['index'])
-            exog.index.freq = 'D'
-            exog = exog.drop(columns=['index'])
+            exog[
+                "index"
+            ] = (
+                y_prime.index
+            )  # is exactly the same as manual calculation in the above cells
+            exog = exog.set_index(exog["index"])
+            exog.index.freq = "D"
+            exog = exog.drop(columns=["index"])
 
             data = data.join(exog)
 

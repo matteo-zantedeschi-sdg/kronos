@@ -10,7 +10,6 @@ from kronos.ml_flower import MLFlower
 from kronos.models.krns_lumpy import KRNSLumpy
 from kronos.models.krns_pmdarima import KRNSPmdarima
 from kronos.models.krns_prophet import KRNSProphet
-
 # TODO: Fix del modello tensorflow, per ora è commentato perchè non riuscivo a farlo eseguire in locale
 from kronos.models.krns_tensorflow import KRNSTensorflow
 
@@ -285,13 +284,13 @@ class Modeler:
                     model.preprocess()
 
                     # Log model params
-                    # model.log_params(client=self.ml_flower.client, run_id=run_id)
+                    model.log_params(client=self.ml_flower.client, run_id=run_id)
 
                     # Fit the model
                     model.fit()
 
                     # Log the model
-                    # model.log_model(artifact_path="model")
+                    model.log_model(artifact_path="model")
 
                     # Make predictions
                     test_data_first_date = self.test_data[self.date_col].min()
@@ -304,47 +303,29 @@ class Modeler:
                         return_conf_int=True,
                     )
 
-                    if model_name.split("_")[0].lower() == "pmdarima":
-                        pred_method = model.PREDICTION_METHODS
-                    else:
-                        pred_method = [""]
+                    # Compute rmse and mape
+                    train_evals = self.evaluate_model(
+                        actual=self.test_data.sort_values(
+                            by=[self.date_col], ascending=True
+                        )[self.fcst_horizon - self.horizon :][self.metric_col].values,
+                        pred=pred.sort_values(by=[self.date_col], ascending=True)[
+                            self.fcst_horizon - self.horizon :
+                        ][self.fcst_col].values,
+                        metrics=self.fcst_competition_metrics,
+                    )
 
-                    for _pred_method in pred_method:
-                        if model_name.split("_")[0].lower() == "pmdarima":
-                            model.pred_method = _pred_method
-                            if not mlflow.active_run():
-                                # Start run
-                                run_name = datetime.datetime.utcnow().isoformat()
-                                run = self.ml_flower.start_run(run_name=run_name)
-                                run_id = run.info.run_id
+                    # TODO: DF Performance si popola in modo posizionale, sarebbe meglio se si popolasse
+                    #  tramite un dizionario mantenendo comunque l'indice
+                    self.df_performances.loc[model_name] = [
+                        self.models_config[model_name],
+                        model,
+                        run_id,
+                    ] + list(train_evals.values())
 
-                        model.log_params(client=self.ml_flower.client, run_id=run_id)
-                        model.log_model(artifact_path="model")
-                        # Compute rmse and mape
-                        train_evals = self.evaluate_model(
-                            actual=self.test_data.sort_values(
-                                by=[self.date_col], ascending=True
-                            )[self.fcst_horizon - self.horizon :][
-                                self.metric_col
-                            ].values,
-                            pred=pred.sort_values(by=[self.date_col], ascending=True)[
-                                self.fcst_horizon - self.horizon :
-                            ][self.fcst_col + _pred_method].values,
-                            metrics=self.fcst_competition_metrics,
-                        )
+                    for key, val in train_evals.items():
+                        self.ml_flower.client.log_metric(run_id, key, val)
 
-                        # TODO: DF Performance si popola in modo posizionale, sarebbe meglio se si popolasse
-                        #  tramite un dizionario mantenendo comunque l'indice
-                        self.df_performances.loc[model_name + _pred_method] = [
-                            self.models_config[model_name],
-                            model,
-                            run_id,
-                        ] + list(train_evals.values())
-
-                        for key, val in train_evals.items():
-                            self.ml_flower.client.log_metric(run_id, key, val)
-
-                        self.ml_flower.end_run()
+                    self.ml_flower.end_run()
 
                 except Exception as e:
                     logger.error(f"### Model {model_name} training failed: {e}")
@@ -703,11 +684,6 @@ class Modeler:
                     model=trained_model,
                 )
             elif model_flavor == "pmdarima":
-                if trained_model:
-                    pred_method = trained_model[1]
-                    trained_model = trained_model[0]
-                else:
-                    pred_method = None
                 model = KRNSPmdarima(
                     modeler=self,
                     m=model_config.get("m", 7),
@@ -715,7 +691,6 @@ class Modeler:
                     model=trained_model,
                     select_variables=model_config.get("select_variables", True),
                 )
-                model.pred_method = pred_method
             elif model_flavor == "lumpy":
                 model = KRNSLumpy(
                     modeler=self,
