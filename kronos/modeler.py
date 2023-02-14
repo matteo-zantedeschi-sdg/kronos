@@ -10,6 +10,7 @@ from kronos.ml_flower import MLFlower
 from kronos.models.krns_lumpy import KRNSLumpy
 from kronos.models.krns_pmdarima import KRNSPmdarima
 from kronos.models.krns_prophet import KRNSProphet
+
 # TODO: Fix del modello tensorflow, per ora è commentato perchè non riuscivo a farlo eseguire in locale
 from kronos.models.krns_tensorflow import KRNSTensorflow
 
@@ -566,6 +567,9 @@ class Modeler:
             krns_model = self.model_generation(
                 model_flavor=flavor, model_config={}, trained_model=model
             )
+
+            print(krns_model)
+            print(krns_model.model.summary())
 
             # Get predictions
             pred = krns_model.predict(

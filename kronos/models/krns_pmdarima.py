@@ -186,11 +186,24 @@ class KRNSPmdarima:
             # TODO: parametrizzare nome colonna FOURIER_C365-0
             if "FOURIER_S365-0" in self.modeler.train_data.columns:
                 fouriers = self.modeler.train_data.loc[
-                    :, ["FOURIER_S365-0", "FOURIER_C365-0"]
+                    :,
+                    [
+                        "FOURIER_S365-0",
+                        "FOURIER_C365-0",
+                        # "natale",
+                        # "FOURIER_C365-1",
+                        # "FOURIER_S365-1",
+                    ],
                 ]
                 self.modeler.train_data = self.modeler.train_data.drop(
-                    fouriers.columns[0], axis=1
-                ).drop(fouriers.columns[1], axis=1)
+                    columns=[
+                        "FOURIER_S365-0",
+                        "FOURIER_C365-0",
+                        # "natale",
+                        # "FOURIER_C365-1",
+                        # "FOURIER_S365-1",
+                    ]
+                )
             else:
                 fouriers = None
 
@@ -244,7 +257,9 @@ class KRNSPmdarima:
                 sarimax_kwargs={
                     "enforce_stationarity": False,
                 },
+                D=1,
             )
+            print(self.model.arima_res_.model.exog_names)
 
             # Add last training day attribute
             self.model.last_training_day = self.modeler.train_data.index.max()
@@ -331,7 +346,8 @@ class KRNSPmdarima:
                     alpha=0.05,
                 )
 
-                prediction2 = [fcst[1] for fcst in prediction[1]]
+                # prediction2 = [fcst[1] for fcst in prediction[1]]
+                prediction2 = [fcst for fcst in prediction[0]]
 
                 pred = pd.DataFrame(
                     data={

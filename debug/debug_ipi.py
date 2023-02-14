@@ -8,8 +8,10 @@ sys.path.append("/home/leon/Doc/programm/SDG/hera/kronos/")
 from kronos.forecast_udf import forecast_udf_gen
 
 pd_arera_valid = pd.read_csv(
-    "/home/leon/Doc/programm/SDG/hera/fcst_local/df_arera_valid_es.csv"
-    # "/home/leon/Doc/programm/SDG/hera/fcst_local/pdr.csv"
+    #     '/home/leon/Doc/programm/SDG/hera/fcst_local/pdr.csv'
+    #     '/home/leon/Doc/programm/SDG/hera/fcst_local/00300041001592_test.csv'
+    "/home/leon/Doc/programm/SDG/hera/fcst_local/natale.csv",
+    dtype={"pdr_id": str},
 )
 param = (
     pd.read_csv("/home/leon/Doc/programm/SDG/hera/fcst_local/param.csv")
@@ -18,72 +20,28 @@ param = (
 )
 
 
-param["KEY_COL"] = "arera"
-param["DATE_COL"] = "ts_battuta"
-param["METRIC_COL"] = "battuta"
+param["KEY_COL"] = "pdr_id"
+param["DATE_COL"] = "giorno_gas"
+param["METRIC_COL"] = "volume_giorno"
 param["FCST_COL"] = "portata_mezzoraria_fcst"
 
-param["FCST_FIRST_DATE"] = "2022-01-12"
-param["CURRENT_DATE"] = "2022-01-11"
+# param['FCST_FIRST_DATE'] = '2023-01-24'
+# param['CURRENT_DATE'] = '2022-01-13'#'2023-01-20'
+param["CURRENT_DATE"] = "2022-12-22"
 
-param["PDR_FCST_HORIZON"] = 7
+param["PDR_FCST_HORIZON"] = 5
 param["N_TEST"] = 1
 param["N_UNIT_TEST"] = 1
 
 
 param["FCST_MODELS_CONFIG"] = {
-    #     "prophet_1": {
-    #         "model_flavor": "prophet",
-    #         "interval_width": 0.95,
-    #         "growth": "logistic",
-    #         "yearly_seasonality": True,
-    #         "weekly_seasonality": True,
-    #         "daily_seasonality": False,
-    #         "seasonality_mode": "multiplicative",
-    #         "floor": 0,
-    #         "country_holidays": "IT"
-    #     },
-    #     "prophet_2": {
-    #         "model_flavor": "prophet",
-    #         "interval_width": 0.95,
-    #         "growth": "linear",
-    #         "yearly_seasonality": True,
-    #         "weekly_seasonality": True,
-    #         "daily_seasonality": False,
-    #         "seasonality_mode": "additive",
-    #         "floor": 0,
-    #         "country_holidays": "IT"
-    #     },
-    #     "tensorflow_1": {
-    #         "model_flavor": "tensorflow",
-    #         "nn_type": "rnn",
-    #         "n_units": 128,
-    #         "activation": "relu",
-    #         "epochs": 25,
-    #         "n_inputs": 30
-    #     },
-    #     "tensorflow_2": {
-    #         "model_flavor": "tensorflow",
-    #         "nn_type": "lstm",
-    #         "n_units": 128,
-    #         "activation": "relu",
-    #         "epochs": 25,
-    #         "n_inputs": 30
-    #     },
-    "pmdarima_1": {
+    "pmdarima_2": {
         "model_flavor": "pmdarima",
         "m": 7,
         "seasonal": True,
-        "select_variables": False,
-    },
-    #     "pmdarima_2": {
-    #         "model_flavor": "pmdarima",
-    #         "m": 7,
-    #         "seasonal": True,
-    #         "select_variables": True
-    #     }
+        "select_variables": True,
+    }
 }
-
 
 # Read all params from dictionary
 
@@ -124,9 +82,8 @@ dt_creation_col = param["DT_CREAZIONE_COL"]
 dt_reference_col = param["DT_RIFERIMENTO_COL"]
 
 # 'rmse | mape'
-fcst_competition_metrics = (
-    param["FCST_COMPETITION_METRICS"].lower().replace(" ", "").split("|")
-)
+# fcst_competition_metrics = param['FCST_COMPETITION_METRICS'].lower().replace(' ', '').split('|')
+fcst_competition_metrics = ["max_perc_diff", "max_perc_diff_3_days"]
 # '0.5 | 0.5'
 fcst_competition_metric_weights = [
     float(metric)
@@ -136,51 +93,42 @@ fcst_competition_metric_weights = [
 ]
 
 
-# arr = ["G_35524", "G_114065", "G_114114", "G_38138"]
-# # i_r = 3
-# i_r = 2
+pdr = ["03081000680963", "03081000733332"]
 
-# print(arr[i_r])
-
-# df_single_arera = pd_arera_valid[(pd_arera_valid["arera"] == arr[i_r])].copy(deep=True)
-df_single_arera = pd_arera_valid.copy(deep=True)
+df_single_arera = (
+    pd_arera_valid[pd_arera_valid["pdr_id"] == pdr[1]]
+    .sort_values(by=[date_col], ascending=False)
+    .set_index(date_col)
+    .reset_index()
+    .copy(deep=True)
+)
 
 df_single_arera[date_col] = [
     datetime.fromisoformat(i).date() for i in df_single_arera[date_col]
 ]
+
+
+df_copy = df_single_arera.copy(deep=True)
 
 df_arera_valid_fcst = (
     df_single_arera[
         df_single_arera[date_col] <= current_date + timedelta(days=fcst_horizon)
     ]
     .sort_values(by=[date_col], ascending=False)
+    .set_index(date_col)
     .reset_index()
     .copy(deep=True)
 )
-# df_single_arera['date'] = [datetime.strptime(i[:-14], '%Y-%m-%d')
-#                                 for i in df_single_arera['ts_battuta']]
-
-# df_single_arera['date'] = pd.to_datetime(pd_arera_valid['ts_battuta'])
 
 
-df_copy = df_arera_valid_fcst.copy(deep=True)
 df_arera_valid_fcst.loc[
-    df_arera_valid_fcst["ts_battuta"] > current_date, "battuta"
+    df_arera_valid_fcst[date_col] >= current_date - timedelta(days=2), metric_col
 ] = None
-df_arera_valid_fcst.loc[
-    df_arera_valid_fcst["ts_battuta"] > current_date, "missing_fraction"
-] = 0
-df_arera_valid_fcst.loc[
-    df_arera_valid_fcst["ts_battuta"] > current_date, "remi_active"
-] = 5
-df_arera_valid_fcst.loc[
-    df_arera_valid_fcst["ts_battuta"] > current_date, "flag_missing"
-] = 0
 
+df_arera_valid_fcst[key_col] = df_arera_valid_fcst[key_col].astype("string") + "_test"
 
-current_date = current_date + timedelta(days=2)
-fcst_horizon -= 2
 df_arera_valid_fcst["classe_desc"] = "smooth"
+# df_arera_valid_fcst['classe_desc'] = "lumpy"
 
 
 import mlflow
@@ -210,10 +158,10 @@ forecast_udf = forecast_udf_gen(
     dt_reference_col=dt_reference_col,
     fcst_competition_metrics=fcst_competition_metrics,
     fcst_competition_metric_weights=fcst_competition_metric_weights,
+    future_only=True,
     x_reg_columns=[
         "sabato",
         "domenica",
-        "year",
         "mean_temperatura",
         "max_temperatura",
         "min_temperatura",
@@ -236,11 +184,13 @@ forecast_udf = forecast_udf_gen(
         "Wed",
         "Thu",
         "Fri",
-        "flag_missing",
-        "missing_fraction",
-        "n_festivita_locale",
+        "FOURIER_S365-0",
+        "FOURIER_C365-0",
+        "natale",
+        "FOURIER_C365-1",
+        "FOURIER_S365-1",
     ],
-    future_only=True,
+    #     x_reg_columns = ['mean_temperatura']
 )
 
 
