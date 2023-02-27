@@ -7,6 +7,7 @@ setup.py
 spark_env_setup.txt
 wheel_cli.txt
 debug/debug_forecast.py
+debug/debug_ipi.py
 debug/debug_naive.py
 debug/debug_pmdarima.py
 debug/debug_prophet.py

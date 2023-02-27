@@ -20,7 +20,7 @@ class KRNSPmdarima:
     Class to implement pm.arima.arima.ARIMA in kronos.
     """
 
-    PREDICTION_METHODS = ["percentile_85", "Confidence_intervall"]
+    # PREDICTION_METHODS = ["percentile_85", "Confidence_intervall"]
 
     def __init__(
         self,
@@ -184,26 +184,16 @@ class KRNSPmdarima:
         try:
 
             # TODO: parametrizzare nome colonna FOURIER_C365-0
-            if "FOURIER_S365-0" in self.modeler.train_data.columns:
-                fouriers = self.modeler.train_data.loc[
-                    :,
-                    [
-                        "FOURIER_S365-0",
-                        "FOURIER_C365-0",
-                        # "natale",
-                        # "FOURIER_C365-1",
-                        # "FOURIER_S365-1",
-                    ],
-                ]
-                self.modeler.train_data = self.modeler.train_data.drop(
-                    columns=[
-                        "FOURIER_S365-0",
-                        "FOURIER_C365-0",
-                        # "natale",
-                        # "FOURIER_C365-1",
-                        # "FOURIER_S365-1",
-                    ]
+            _col = list(
+                set(self.modeler.train_data.columns).intersection(
+                    {
+                        "natale",
+                    }.union(set([f"{i}" for i in range(12)]))
                 )
+            )
+            if _col:
+                fouriers = self.modeler.train_data.loc[:, _col]
+                self.modeler.train_data = self.modeler.train_data.drop(columns=_col)
             else:
                 fouriers = None
 
@@ -346,8 +336,8 @@ class KRNSPmdarima:
                     alpha=0.05,
                 )
 
-                # prediction2 = [fcst[1] for fcst in prediction[1]]
-                prediction2 = [fcst for fcst in prediction[0]]
+                prediction2 = [fcst[1] for fcst in prediction[1]]
+                # prediction2 = [fcst for fcst in prediction[0]]
 
                 pred = pd.DataFrame(
                     data={

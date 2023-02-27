@@ -35,6 +35,17 @@ param["N_UNIT_TEST"] = 1
 
 
 param["FCST_MODELS_CONFIG"] = {
+    # "prophet_2": {
+    #     "model_flavor": "prophet",
+    #     "interval_width": 0.95,
+    #     "growth": "linear",
+    #     "yearly_seasonality": True,
+    #     "weekly_seasonality": True,
+    #     "daily_seasonality": False,
+    #     "seasonality_mode": "additive",
+    #     "floor": 0,
+    #     "country_holidays": "IT",
+    # },
     "pmdarima_2": {
         "model_flavor": "pmdarima",
         "m": 7,
@@ -124,17 +135,26 @@ df_arera_valid_fcst = (
 df_arera_valid_fcst.loc[
     df_arera_valid_fcst[date_col] >= current_date - timedelta(days=2), metric_col
 ] = None
-
 df_arera_valid_fcst[key_col] = df_arera_valid_fcst[key_col].astype("string") + "_test"
 
 df_arera_valid_fcst["classe_desc"] = "smooth"
 # df_arera_valid_fcst['classe_desc'] = "lumpy"
 
+dates_natale = [
+    datetime.strptime(f"20{i}-12-23", "%Y-%m-%d").date() + timedelta(days=j)
+    for i in range(19, 23)
+    for j in range(10)
+]
+
+df_arera_valid_fcst["natale"] = 0
+df_arera_valid_fcst.loc[
+    df_arera_valid_fcst.eval("giorno_gas in @dates_natale"), "natale"
+] = 1
 
 import mlflow
 from mlflow.tracking import MlflowClient
 
-mlflow.set_tracking_uri("sqlite:///mlflow.db")
+mlflow.set_tracking_uri("sqlite:///mlflow2.db")
 # Init mlflow client
 client = MlflowClient()
 

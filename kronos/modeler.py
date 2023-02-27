@@ -568,9 +568,6 @@ class Modeler:
                 model_flavor=flavor, model_config={}, trained_model=model
             )
 
-            print(krns_model)
-            print(krns_model.model.summary())
-
             # Get predictions
             pred = krns_model.predict(
                 fcst_first_date=self.fcst_first_date,
@@ -627,6 +624,44 @@ class Modeler:
 
         # Remove negative values
         pred[self.fcst_col] = pred[self.fcst_col].apply(lambda x: x if x >= 0 else 0)
+
+        # check if natale coumn exists
+        # and if any of days to predict is days of natale
+        if (
+            "natale" in self.pred_data.columns
+            and any(self.pred_data["natale"])
+            and any(self.train_data["natale"])
+        ):
+            q = "natale == 1"
+            pd_natale = (
+                self.data.query(q)[[self.date_col, self.metric_col]]
+                .dropna()
+                .reset_index()
+                .drop(columns="index")
+            )
+            pd_natale["days"] = pd.to_datetime(pd_natale[self.date_col]).dt.day
+            pd_natale = pd_natale.pivot_table(
+                index="days", values=[self.metric_col], aggfunc=np.mean
+            ).reset_index()
+            days_natale = pd_natale["days"]
+            days_res = pd.to_datetime(pred[self.date_col]).dt.day.values
+            exp = lambda x: x.day
+            rate = 0.1
+            pred.loc[
+                pred.eval(f"{self.date_col}.apply(@exp) in @days_natale"),
+                self.fcst_col,
+            ] = (
+                rate
+                * pred.loc[
+                    pred.eval(f"{self.date_col}.apply(@exp) in @days_natale"),
+                    self.fcst_col,
+                ].values
+                + (1 - rate)
+                * pd_natale.loc[
+                    pd_natale.eval(f"days in @days_res"),
+                    self.metric_col,
+                ].values
+            )
 
         return pred
 
