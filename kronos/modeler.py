@@ -600,16 +600,15 @@ class Modeler:
                 model, flavor = self.ml_flower.load_model(
                     model_uri=f"models:/{self.key_code}/Production"
                 )
-                model_config = self.ml_flower.get_parameters(
+                prod_model_config = self.ml_flower.get_parameters(
                     f"models:/{self.key_code}/Production"
                 )
-                print(model_config)
+                print(prod_model_config)
                 print(list(self.models_config.values())[0])
 
             except Exception as e:
                 logger.info(f"### Failed to load the model in production")
-                if predict:
-                    raise Exception("Critical: can not load production model")
+                prod_model_config = None
 
             core_model_fconfig = {
                 k: v
@@ -617,14 +616,15 @@ class Modeler:
                 if k != "model_flavor"
             }
 
-            if predict and core_model_fconfig != model_config:
-                model_name = list(self.models_config.values())[0]["model_flavor"]
+            if predict and core_model_fconfig != prod_model_config:
+                model_name = list(self.models_config.keys())[0]
 
                 logger.info(f"### Train new {model_name} for prediction.")
+                self.models_config = {model_name: list(self.models_config.values())[0]}
 
                 self.training()
 
-                model_run_id = self.df_performances.loc[model_name]["run_di"]
+                model_run_id = self.df_performances.loc[model_name]["run_id"]
                 model, flavor = self.ml_flower.load_model(
                     model_uri=f"runs:/{model_run_id}/model"
                 )
@@ -799,7 +799,6 @@ class Modeler:
                     seasonal=model_config.get("seasonal", True),
                     model=trained_model,
                     select_variables=model_config.get("select_variables", True),
-                    pred_method=pred_method,
                 )
             elif model_flavor == "lumpy":
                 model = KRNSLumpy(

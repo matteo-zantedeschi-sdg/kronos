@@ -28,7 +28,6 @@ class KRNSPmdarima:
         seasonal: bool = True,
         select_variables: bool = True,
         variables: list = None,
-        pred_method=None,
     ) -> None:
         """
         Initialization method.
@@ -68,7 +67,6 @@ class KRNSPmdarima:
             "m": self.m,
             "seasonal": self.seasonal,
             "select_variables": self.select_variables,
-            "prediction_method": self._pred_method,
         }
 
     def preprocess(self) -> None:

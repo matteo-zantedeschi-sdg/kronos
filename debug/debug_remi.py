@@ -23,8 +23,8 @@ param["DATE_COL"] = "ts_battuta"
 param["METRIC_COL"] = "battuta"
 param["FCST_COL"] = "portata_mezzoraria_fcst"
 
-param["FCST_FIRST_DATE"] = "2022-01-12"
-param["CURRENT_DATE"] = "2022-01-11"
+param["FCST_FIRST_DATE"] = "2022-01-15"
+param["CURRENT_DATE"] = "2022-01-16"
 
 param["PDR_FCST_HORIZON"] = 7
 param["N_TEST"] = 1
@@ -32,17 +32,17 @@ param["N_UNIT_TEST"] = 1
 
 
 param["FCST_MODELS_CONFIG"] = {
-    #     "prophet_1": {
-    #         "model_flavor": "prophet",
-    #         "interval_width": 0.95,
-    #         "growth": "logistic",
-    #         "yearly_seasonality": True,
-    #         "weekly_seasonality": True,
-    #         "daily_seasonality": False,
-    #         "seasonality_mode": "multiplicative",
-    #         "floor": 0,
-    #         "country_holidays": "IT"
-    #     },
+    "prophet_1": {
+        "model_flavor": "prophet",
+        "interval_width": 0.95,
+        "growth": "logistic",
+        "yearly_seasonality": True,
+        "weekly_seasonality": True,
+        "daily_seasonality": False,
+        "seasonality_mode": "multiplicative",
+        "floor": 0,
+        "country_holidays": "IT",
+    },
     #     "prophet_2": {
     #         "model_flavor": "prophet",
     #         "interval_width": 0.95,
@@ -76,13 +76,12 @@ param["FCST_MODELS_CONFIG"] = {
     #     "seasonal": True,
     #     "select_variables": False,
     # },
-    "pmdarima_2": {
-        "model_flavor": "pmdarima",
-        "m": 7,
-        "seasonal": True,
-        "select_variables": True,
-        "prediction_method": "percentile_85",
-    }
+    # "pmdarima_2": {
+    #     "model_flavor": "pmdarima",
+    #     "m": 7,
+    #     "seasonal": True,
+    #     "select_variables": True,
+    # }
 }
 
 
@@ -125,26 +124,26 @@ dt_creation_col = param["DT_CREAZIONE_COL"]
 dt_reference_col = param["DT_RIFERIMENTO_COL"]
 
 # 'rmse | mape'
-fcst_competition_metrics = (
-    param["FCST_COMPETITION_METRICS"].lower().replace(" ", "").split("|")
-)
+fcst_competition_metrics = ["rmse", "mape"]  # (
+#     param["FCST_COMPETITION_METRICS"].lower().replace(" ", "").split("|")
+# )
 # '0.5 | 0.5'
-fcst_competition_metric_weights = [
-    float(metric)
-    for metric in param["FCST_DEFAULT_COMPETITION_METRIC_WEIGHTS"]
-    .replace(" ", "")
-    .split("|")
-]
+fcst_competition_metric_weights = [0.5, 0.5]  # [
+#     float(metric)
+#     for metric in param["FCST_DEFAULT_COMPETITION_METRIC_WEIGHTS"]
+#     .replace(" ", "")
+#     .split("|")
+# ]
 
 
-# arr = ["G_35524", "G_114065", "G_114114", "G_38138"]
-# # i_r = 3
-# i_r = 2
+arr = ["G_35524", "G_114065", "G_114114", "G_38138"]
+# i_r = 3
+i_r = 2
 
-# print(arr[i_r])
+print(arr[i_r])
 
-# df_single_arera = pd_arera_valid[(pd_arera_valid["arera"] == arr[i_r])].copy(deep=True)
-df_single_arera = pd_arera_valid.copy(deep=True)
+df_single_arera = pd_arera_valid[(pd_arera_valid["arera"] == arr[i_r])].copy(deep=True)
+# df_single_arera = pd_arera_valid.copy(deep=True)
 
 df_single_arera[date_col] = [
     datetime.fromisoformat(i).date() for i in df_single_arera[date_col]
@@ -179,10 +178,12 @@ df_arera_valid_fcst.loc[
 ] = 0
 
 
-df_arera_valid_fcst[key_col] = df_arera_valid_fcst[key_col].astype("string") + "_test"
-df_arera_valid_fcst[action_col] = "prediction"
-# df_arera_valid_fcst[action_col] = "training"
+df_arera_valid_fcst[key_col] = (
+    df_arera_valid_fcst[key_col].astype("string") + "_test_actions"
+)
 # df_arera_valid_fcst[action_col] = "competition"
+# df_arera_valid_fcst[action_col] = "training"
+df_arera_valid_fcst[action_col] = "prediction"
 
 
 current_date = current_date + timedelta(days=2)
