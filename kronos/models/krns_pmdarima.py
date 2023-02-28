@@ -20,8 +20,6 @@ class KRNSPmdarima:
     Class to implement pm.arima.arima.ARIMA in kronos.
     """
 
-    # PREDICTION_METHODS = ["percentile_85", "Confidence_intervall"]
-
     def __init__(
         self,
         modeler,  # TODO: How to explicit its data type without incur in [...] most likely due to a circular import
@@ -30,6 +28,7 @@ class KRNSPmdarima:
         seasonal: bool = True,
         select_variables: bool = True,
         variables: list = None,
+        pred_method=None,
     ) -> None:
         """
         Initialization method.
@@ -60,7 +59,6 @@ class KRNSPmdarima:
         self.m = m
         self.seasonal = seasonal
         self.select_variables = select_variables
-        # self._pred_method = None
         self.variables = variables
 
         # To load an already configured model
@@ -70,16 +68,8 @@ class KRNSPmdarima:
             "m": self.m,
             "seasonal": self.seasonal,
             "select_variables": self.select_variables,
+            "prediction_method": self._pred_method,
         }
-
-    # @property
-    # def pred_method(self):
-    #     return self._pred_method
-
-    # @pred_method.setter
-    # def pred_method(self, pred_meth):
-    #     self._pred_method = pred_meth
-    #     self.model_params["prediction_method"] = pred_meth
 
     def preprocess(self) -> None:
         """

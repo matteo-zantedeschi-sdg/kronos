@@ -70,18 +70,19 @@ param["FCST_MODELS_CONFIG"] = {
     #         "epochs": 25,
     #         "n_inputs": 30
     #     },
-    "pmdarima_1": {
+    # "pmdarima_1": {
+    #     "model_flavor": "pmdarima",
+    #     "m": 7,
+    #     "seasonal": True,
+    #     "select_variables": False,
+    # },
+    "pmdarima_2": {
         "model_flavor": "pmdarima",
         "m": 7,
         "seasonal": True,
-        "select_variables": False,
-    },
-    #     "pmdarima_2": {
-    #         "model_flavor": "pmdarima",
-    #         "m": 7,
-    #         "seasonal": True,
-    #         "select_variables": True
-    #     }
+        "select_variables": True,
+        "prediction_method": "percentile_85",
+    }
 }
 
 
@@ -176,6 +177,12 @@ df_arera_valid_fcst.loc[
 df_arera_valid_fcst.loc[
     df_arera_valid_fcst["ts_battuta"] > current_date, "flag_missing"
 ] = 0
+
+
+df_arera_valid_fcst[key_col] = df_arera_valid_fcst[key_col].astype("string") + "_test"
+df_arera_valid_fcst[action_col] = "prediction"
+# df_arera_valid_fcst[action_col] = "training"
+# df_arera_valid_fcst[action_col] = "competition"
 
 
 current_date = current_date + timedelta(days=2)

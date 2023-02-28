@@ -63,8 +63,23 @@ class MLFlower:
         except Exception as e:
             logger.error(f"### End of the run failed: {e}")
 
-    # @staticmethod
-    def load_model(self, model_uri: str):
+    def get_parameters(self, model_uri) -> dict:
+        import json
+
+        try:
+            pyfunc_model = mlflow.pyfunc.load_model(model_uri)
+            res = self.client.get_run(pyfunc_model.metadata.run_id).data.params
+            for k, val in res.items():
+                try:
+                    res[k] = json.loads(val.lower())
+                except ValueError:
+                    res[k] = val
+            return res
+        except Exception as e:
+            logger.error(f"### Parameters loading failed: {e}")
+
+    @staticmethod
+    def load_model(model_uri: str):
         """
         Static method to load a model in Python function format from a specific uri.
         Based on its flavor (e.g. 'prophet') the model is later reloaded using the specific loader module.

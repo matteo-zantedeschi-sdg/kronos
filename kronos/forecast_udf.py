@@ -177,29 +177,45 @@ def forecast_udf_gen(
         )
 
         # TRAINING #####
-        if quality == "good" and action in ["competition", "training"]:
+        prod_model_win = True if action == "prediction" else False
+        if quality == "good" and action == "competition":
             modeler.training()
-
-            prod_model_win = False
 
             modeler.prod_model_eval()
 
-            if action == "competition":
-                modeler.competition()
-                if modeler.winning_model_name == "prod_model":
-                    prod_model_win = True
-                    logger.info("### Prod model is still winning.")
+            modeler.competition()
+            # if modeler.winning_model_name == "prod_model":
+            #     prod_model_win = True
+            #     logger.info("### Prod model is still winning.")
 
-            if not prod_model_win:
-                modeler.deploy()
+        elif action == "training":
+            modeler.prod_model_training()
+        elif action == "prediction":
+            # perform training on the SINGLE model passed as argument in models_config
+            # in the case multiple models are presetn consider only firs one
+            # the configuration of the model MUST be complite(arima: specify explicitly the 'prediction_method')
+            pred = modeler.prediction(predict=True)
+
+        if not modeler.winning_model_name == "prod_model":
+            modeler.deploy()
+            # prod_model_win = True
+        else:
+            logger.info("### Prod model is still winning.")
+
+        # if not prod_model_win:
+        #     modeler.deploy()
 
         # PREDICTION #####
         # TODO: Modificare l'utilizzo di variabili esogene se c'è solo prediction
 
-        pred = modeler.prediction()
-
+        # if action in ["competition", "prediction"]:
+        if action != "prediction":
+            pred = modeler.prediction()
         pred = pred.tail(horizon)
-
         return pred
+        # else:
+        #     return pd.DataFrame(
+        #         columns=[date_col, fcst_col, dt_reference_col, dt_creation_col, key_col]
+        #     )
 
     return forecast_udf
