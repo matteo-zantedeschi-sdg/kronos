@@ -184,17 +184,11 @@ def forecast_udf_gen(
             modeler.prod_model_eval()
 
             modeler.competition()
-            # if modeler.winning_model_name == "prod_model":
-            #     prod_model_win = True
-            #     logger.info("### Prod model is still winning.")
 
         elif action == "training":
             modeler.prod_model_training()
         elif action == "prediction":
-            # perform training on the SINGLE model passed as argument in models_config
-            # in the case multiple models are presetn consider only firs one
-            # the configuration of the model MUST be complite(arima: specify explicitly the 'prediction_method')
-            pred = modeler.prediction(predict=True)
+            pred = modeler.prediction(prod_predict=True)
 
         if not modeler.winning_model_name == "prod_model":
             modeler.deploy()
@@ -213,9 +207,5 @@ def forecast_udf_gen(
             pred = modeler.prediction()
         pred = pred.tail(horizon)
         return pred
-        # else:
-        #     return pd.DataFrame(
-        #         columns=[date_col, fcst_col, dt_reference_col, dt_creation_col, key_col]
-        #     )
 
     return forecast_udf

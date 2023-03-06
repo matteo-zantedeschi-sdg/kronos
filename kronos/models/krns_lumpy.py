@@ -9,12 +9,10 @@ import pandas as pd
 import pmdarima as pm
 from mlflow.tracking import MlflowClient
 
-from kronos.models.krns_AbstractModel import AbstractModel
-
 logger = logging.getLogger(__name__)
 
 
-class KRNSLumpy(AbstractModel):
+class KRNSLumpy:
     """
     Class to implement a specific forecats model for lumpy class in kronos.
     """

@@ -7,12 +7,10 @@ import pandas as pd
 from mlflow.tracking import MlflowClient
 from prophet import Prophet
 
-from kronos.models.krns_AbstractModel import AbstractModel
-
 logger = logging.getLogger(__name__)
 
 
-class KRNSProphet(AbstractModel):
+class KRNSProphet:
     """
     Class to implement Prophet in kronos.
     """

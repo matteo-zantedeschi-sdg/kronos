@@ -237,7 +237,6 @@ class KRNSPmdarima:
                 },
                 D=1,
             )
-            print(self.model.arima_res_.model.exog_names)
 
             # Add last training day attribute
             self.model.last_training_day = self.modeler.train_data.index.max()

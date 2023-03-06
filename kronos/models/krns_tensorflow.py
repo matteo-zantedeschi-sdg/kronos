@@ -9,12 +9,10 @@ import pandas as pd
 import tensorflow as tf
 from mlflow.tracking import MlflowClient
 
-from kronos.models.krns_AbstractModel import AbstractModel
-
 logger = logging.getLogger(__name__)
 
 
-class KRNSTensorflow(AbstractModel):
+class KRNSTensorflow:
     """
     Class to implement Tensorflow in kronos.
     """

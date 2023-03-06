@@ -585,7 +585,7 @@ class Modeler:
                 f"### Deployment of model {self.winning_model_name} failed: {e}"
             )
 
-    def prediction(self, predict=False) -> pd.DataFrame:
+    def prediction(self, prod_predict=False) -> pd.DataFrame:
         """
         Method to perform prediction using an mlflow model.
         The model is retrieved from the "Production" stage of the mlflow Model Registry, then it is used to provide the predictions.
@@ -600,39 +600,18 @@ class Modeler:
                 model, flavor = self.ml_flower.load_model(
                     model_uri=f"models:/{self.key_code}/Production"
                 )
-                prod_model_config = self.ml_flower.get_parameters(
-                    f"models:/{self.key_code}/Production"
-                )
-                print(prod_model_config)
-                print(list(self.models_config.values())[0])
-
+                if prod_predict:
+                    logger.info("### Compute the prediction on the Prod model")
+                    self.train_test_split()
+                    self.winning_model_name = "prod_model"
             except Exception as e:
                 logger.info(f"### Failed to load the model in production")
-                prod_model_config = None
-
-            core_model_fconfig = {
-                k: v
-                for k, v in list(self.models_config.values())[0].items()
-                if k != "model_flavor"
-            }
-
-            if predict and core_model_fconfig != prod_model_config:
-                model_name = list(self.models_config.keys())[0]
-
-                logger.info(f"### Train new {model_name} for prediction.")
-                self.models_config = {model_name: list(self.models_config.values())[0]}
-
                 self.training()
-
-                model_run_id = self.df_performances.loc[model_name]["run_id"]
+                self.competition()
+                self.deploy()
                 model, flavor = self.ml_flower.load_model(
-                    model_uri=f"runs:/{model_run_id}/model"
+                    model_uri=f"models:/{self.key_code}/Production"
                 )
-                self.winning_model_name = model_name
-            elif predict:
-                logger.info("### Compute the prediction on the Prod model")
-                self.train_test_split()
-                self.winning_model_name = "prod_model"
 
             krns_model = self.model_generation(
                 model_flavor=flavor, model_config={}, trained_model=model

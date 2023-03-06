@@ -182,8 +182,8 @@ df_arera_valid_fcst[key_col] = (
     df_arera_valid_fcst[key_col].astype("string") + "_test_actions"
 )
 # df_arera_valid_fcst[action_col] = "competition"
-# df_arera_valid_fcst[action_col] = "training"
-df_arera_valid_fcst[action_col] = "prediction"
+df_arera_valid_fcst[action_col] = "training"
+# df_arera_valid_fcst[action_col] = "prediction"
 
 
 current_date = current_date + timedelta(days=2)
