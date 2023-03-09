@@ -602,7 +602,6 @@ class Modeler:
                 )
                 if prod_predict:
                     logger.info("### Compute the prediction on the Prod model")
-                    self.train_test_split()
                     self.winning_model_name = "prod_model"
             except Exception as e:
                 logger.info(f"### Failed to load the model in production")
@@ -613,6 +612,8 @@ class Modeler:
                     model_uri=f"models:/{self.key_code}/Production"
                 )
 
+            if prod_predict:
+                self.train_test_split()
             krns_model = self.model_generation(
                 model_flavor=flavor, model_config={}, trained_model=model
             )
@@ -676,41 +677,41 @@ class Modeler:
 
         # check if natale coumn exists
         # and if any of days to predict is days of natale
-        if (
-            "natale" in self.pred_data.columns
-            and any(self.pred_data["natale"])
-            and any(self.train_data["natale"])
-        ):
-            q = "natale == 1"
-            pd_natale = (
-                self.data.query(q)[[self.date_col, self.metric_col]]
-                .dropna()
-                .reset_index()
-                .drop(columns="index")
-            )
-            pd_natale["days"] = pd.to_datetime(pd_natale[self.date_col]).dt.day
-            pd_natale = pd_natale.pivot_table(
-                index="days", values=[self.metric_col], aggfunc=np.mean
-            ).reset_index()
-            days_natale = pd_natale["days"]
-            days_res = pd.to_datetime(pred[self.date_col]).dt.day.values
-            exp = lambda x: x.day
-            rate = 0.1
-            pred.loc[
-                pred.eval(f"{self.date_col}.apply(@exp) in @days_natale"),
-                self.fcst_col,
-            ] = (
-                rate
-                * pred.loc[
-                    pred.eval(f"{self.date_col}.apply(@exp) in @days_natale"),
-                    self.fcst_col,
-                ].values
-                + (1 - rate)
-                * pd_natale.loc[
-                    pd_natale.eval(f"days in @days_res"),
-                    self.metric_col,
-                ].values
-            )
+        # if (
+        #     "natale" in self.train_data.columns
+        #     and any(self.pred_data["natale"])
+        #     and any(self.train_data["natale"])
+        # ):
+        #     q = "natale == 1"
+        #     pd_natale = (
+        #         self.data.query(q)[[self.date_col, self.metric_col]]
+        #         .dropna()
+        #         .reset_index()
+        #         .drop(columns="index")
+        #     )
+        #     pd_natale["days"] = pd.to_datetime(pd_natale[self.date_col]).dt.day
+        #     pd_natale = pd_natale.pivot_table(
+        #         index="days", values=[self.metric_col], aggfunc=np.mean
+        #     ).reset_index()
+        #     days_natale = pd_natale["days"]
+        #     days_res = pd.to_datetime(pred[self.date_col]).dt.day.values
+        #     exp = lambda x: x.day
+        #     rate = 0.1
+        #     pred.loc[
+        #         pred.eval(f"{self.date_col}.apply(@exp) in @days_natale"),
+        #         self.fcst_col,
+        #     ] = (
+        #         rate
+        #         * pred.loc[
+        #             pred.eval(f"{self.date_col}.apply(@exp) in @days_natale"),
+        #             self.fcst_col,
+        #         ].values
+        #         + (1 - rate)
+        #         * pd_natale.loc[
+        #             pd_natale.eval(f"days in @days_res"),
+        #             self.metric_col,
+        #         ].values
+        #     )
 
         return pred
 

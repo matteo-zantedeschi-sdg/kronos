@@ -6,6 +6,7 @@ from datetime import timedelta
 
 import pandas as pd
 from mlflow.tracking import MlflowClient
+from pmdarima.preprocessing import FourierFeaturizer
 from sklego.preprocessing import RepeatingBasisFunction
 
 from kronos.ml_flower import MLFlower
@@ -129,27 +130,42 @@ def forecast_udf_gen(
 
         n_unit_test = fcst_horizon
 
+        # if data["classe_desc"][0] == "smooth" or data["classe_desc"][0] == "erratic":
+
+        #     data["day_of_year"] = pd.DatetimeIndex(data[date_col]).day_of_year
+
+        #     rbf = RepeatingBasisFunction(
+        #         n_periods=12,
+        #         column="day_of_year",
+        #         input_range=(1, 365),
+        #         remainder="drop",
+        #     )
+        #     rbf.fit(data)
+        #     data = pd.concat(
+        #         [
+        #             data,
+        #             pd.DataFrame(
+        #                 rbf.transform(data), columns=[f"{i}" for i in range(12)]
+        #             ),
+        #         ],
+        #         axis=1,
+        #     )
+        #     data.drop("day_of_year", inplace=True, axis=1)
+
         if data["classe_desc"][0] == "smooth" or data["classe_desc"][0] == "erratic":
+            # Annual seasonality covered by fourier terms
+            four_terms = FourierFeaturizer(365.25, 1)
+            y_prime, exog = four_terms.fit_transform(data.loc[:, metric_col])
+            exog[
+                "index"
+            ] = (
+                y_prime.index
+            )  # is exactly the same as manual calculation in the above cells
+            exog = exog.set_index(exog["index"])
+            exog.index.freq = "D"
+            exog = exog.drop(columns=["index"])
 
-            data["day_of_year"] = pd.DatetimeIndex(data[date_col]).day_of_year
-
-            rbf = RepeatingBasisFunction(
-                n_periods=12,
-                column="day_of_year",
-                input_range=(1, 365),
-                remainder="drop",
-            )
-            rbf.fit(data)
-            data = pd.concat(
-                [
-                    data,
-                    pd.DataFrame(
-                        rbf.transform(data), columns=[f"{i}" for i in range(12)]
-                    ),
-                ],
-                axis=1,
-            )
-            data.drop("day_of_year", inplace=True, axis=1)
+            data = data.join(exog)
 
         # Init an ml_flower instance
         ml_flower = MLFlower(client=client)
@@ -178,7 +194,7 @@ def forecast_udf_gen(
 
         # TRAINING #####
         prod_model_win = True if action == "prediction" else False
-        if quality == "good" and action == "competition":
+        if action == "competition":
             modeler.training()
 
             modeler.prod_model_eval()
@@ -196,13 +212,6 @@ def forecast_udf_gen(
         else:
             logger.info("### Prod model is still winning.")
 
-        # if not prod_model_win:
-        #     modeler.deploy()
-
-        # PREDICTION #####
-        # TODO: Modificare l'utilizzo di variabili esogene se c'è solo prediction
-
-        # if action in ["competition", "prediction"]:
         if action != "prediction":
             pred = modeler.prediction()
         pred = pred.tail(horizon)

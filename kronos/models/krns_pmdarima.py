@@ -174,12 +174,13 @@ class KRNSPmdarima:
             # TODO: parametrizzare nome colonna FOURIER_C365-0
             _col = list(
                 set(self.modeler.train_data.columns).intersection(
-                    {
-                        "natale",
-                    }.union(set([f"{i}" for i in range(12)]))
+                    {"natale", "FOURIER_S365-0", "FOURIER_C365-0"}.union(
+                        set([f"{i}" for i in range(12)])
+                    )
                 )
             )
             if _col:
+                # force some columns to be used always
                 fouriers = self.modeler.train_data.loc[:, _col]
                 self.modeler.train_data = self.modeler.train_data.drop(columns=_col)
             else:
