@@ -1,13 +1,10 @@
 import datetime
 import logging
-import os
-import random
 from datetime import timedelta
 
 import pandas as pd
 from mlflow.tracking import MlflowClient
 from pmdarima.preprocessing import FourierFeaturizer
-from sklego.preprocessing import RepeatingBasisFunction
 
 from kronos.ml_flower import MLFlower
 from kronos.modeler import Modeler
@@ -129,28 +126,6 @@ def forecast_udf_gen(
             n_test = (fcst_horizon // 7 + 1) * 7
 
         n_unit_test = fcst_horizon
-
-        # if data["classe_desc"][0] == "smooth" or data["classe_desc"][0] == "erratic":
-
-        #     data["day_of_year"] = pd.DatetimeIndex(data[date_col]).day_of_year
-
-        #     rbf = RepeatingBasisFunction(
-        #         n_periods=12,
-        #         column="day_of_year",
-        #         input_range=(1, 365),
-        #         remainder="drop",
-        #     )
-        #     rbf.fit(data)
-        #     data = pd.concat(
-        #         [
-        #             data,
-        #             pd.DataFrame(
-        #                 rbf.transform(data), columns=[f"{i}" for i in range(12)]
-        #             ),
-        #         ],
-        #         axis=1,
-        #     )
-        #     data.drop("day_of_year", inplace=True, axis=1)
 
         if data["classe_desc"][0] == "smooth" or data["classe_desc"][0] == "erratic":
             # Annual seasonality covered by fourier terms
