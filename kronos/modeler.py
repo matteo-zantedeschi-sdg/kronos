@@ -604,13 +604,7 @@ class Modeler:
                     logger.info("### Compute the prediction on the Prod model")
                     self.winning_model_name = "prod_model"
             except Exception as e:
-                logger.info(f"### Failed to load the model in production")
-                self.training()
-                self.competition()
-                self.deploy()
-                model, flavor = self.ml_flower.load_model(
-                    model_uri=f"models:/{self.key_code}/Production"
-                )
+                logger.error(f"### Failed to load the model in production")
 
             if prod_predict:
                 self.train_test_split()
