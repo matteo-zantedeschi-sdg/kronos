@@ -1,5 +1,7 @@
 import datetime
 import logging
+import random
+import time
 from datetime import timedelta
 
 import mlflow
@@ -597,6 +599,8 @@ class Modeler:
         try:
             try:
                 # Retrieve production model
+                time.sleep(random.choice([1, 5, 10, 15, 20, 25, 28, 30]))
+
                 model, flavor = self.ml_flower.load_model(
                     model_uri=f"models:/{self.key_code}/Production"
                 )

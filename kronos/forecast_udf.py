@@ -176,16 +176,14 @@ def forecast_udf_gen(
 
             modeler.competition()
 
+            if not modeler.winning_model_name == "prod_model":
+                modeler.deploy()
+            else:
+                logger.info("### Prod model is still winning.")
         elif action == "training":
             modeler.prod_model_training()
         elif action == "prediction":
             pred = modeler.prediction(prod_predict=True)
-
-        if not modeler.winning_model_name == "prod_model":
-            modeler.deploy()
-            # prod_model_win = True
-        else:
-            logger.info("### Prod model is still winning.")
 
         if action != "prediction":
             pred = modeler.prediction()
