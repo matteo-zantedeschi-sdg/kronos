@@ -48,7 +48,6 @@ class Modeler:
         future_only: bool,
         x_reg_columns: list,
     ) -> None:
-
         """
         Initialization method.
 
@@ -161,7 +160,6 @@ class Modeler:
             out = {}
 
             for metric in metrics:
-
                 logger.debug(f"### Performing evaluation using {metric} metric.")
 
                 # Transform metric in lower case and remove whitespaces
@@ -368,6 +366,7 @@ class Modeler:
             self.models_config = {flavor + "_1": model_config}
             self.training()
             self.winning_model_name = flavor + "_1"
+            self.deploy()
             # self.winning_model_name = "prod_model"
 
         except Exception as e:
