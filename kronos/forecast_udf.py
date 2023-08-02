@@ -143,10 +143,10 @@ def forecast_udf_gen(
             data = data.join(exog)
 
         # Init an ml_flower instance
-        ml_flower = MLFlower(client=client)
+        # ml_flower = MLFlower(client=client)
         # Init a modeler instance
         modeler = Modeler(
-            ml_flower=ml_flower,
+            # ml_flower=ml_flower,
             data=data,
             key_col=key_col,
             date_col=date_col,
@@ -168,25 +168,29 @@ def forecast_udf_gen(
         )
 
         # TRAINING #####
-        prod_model_win = True if action == "prediction" else False
-        if action == "competition":
-            modeler.training()
+        # prod_model_win = True if action == "prediction" else False
+        # if action == "competition":
+        #     modeler.training()
 
-            modeler.prod_model_eval()
+        #     # modeler.prod_model_eval()
 
-            modeler.competition()
+        #     modeler.competition()
 
-            if not modeler.winning_model_name == "prod_model":
-                modeler.deploy()
-            else:
-                logger.info("### Prod model is still winning.")
-        elif action == "training":
-            modeler.prod_model_training()
-        elif action == "prediction":
-            pred = modeler.prediction(prod_predict=True)
+        #     # if not modeler.winning_model_name == "prod_model":
+        #     #     modeler.deploy()
+        #     # else:
+        #     #     logger.info("### Prod model is still winning.")
+        # # elif action == "training":
+        # #     modeler.prod_model_training()
+        # # elif action == "prediction":
+        # #     pred = modeler.prediction(prod_predict=True)
 
-        if action != "prediction":
-            pred = modeler.prediction()
+        # if action != "prediction":
+        #     pred = modeler.prediction()
+
+        modeler.training()
+        modeler.competition()
+        pred = modeler.prediction()
         pred = pred.tail(horizon)
         return pred
 

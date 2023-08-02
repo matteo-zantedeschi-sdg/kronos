@@ -1,10 +1,6 @@
-Metadata-Version: 1.0
+Metadata-Version: 2.1
 Name: kronos
-Version: 2.1.0
+Version: 3.0.0
 Summary: Kronos package to manage time-series in Databricks
-Home-page: UNKNOWN
 Author: zantedeschim
 Author-email: matteo.zantedeschi@sdggroup.com
-License: UNKNOWN
-Description: UNKNOWN
-Platform: UNKNOWN
