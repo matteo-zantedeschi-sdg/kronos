@@ -213,9 +213,16 @@ class KRNSLumpy:
         """
         try:
             # Define the model
+            # self.model = pm.ARIMA(
+            #     (self.max_p, self.max_d, self.max_q),
+            #     seasonal_order=(self.max_P, self.max_D, self.max_Q, self.m),
+            # )
+            # self.model.fit(
+            #     y=self.modeler.train_data.loc[:, self.modeler.metric_col],
+            # )
             self.model = pm.auto_arima(
                 y=self.modeler.train_data.loc[:, self.modeler.metric_col],
-                exogenous=self.modeler.train_data[self.modeler.x_reg_columns],
+                # exogenous=self.modeler.train_data[self.modeler.x_reg_columns],
                 start_P=self.start_P,
                 max_P=self.max_P,
                 start_D=self.start_D,
@@ -229,8 +236,8 @@ class KRNSLumpy:
                 max_d=self.max_d,
                 start_q=self.start_q,
                 max_q=self.max_q,
+                seasonal=True,
             )
-
             # Add last training day attribute
             self.model.last_training_day = self.modeler.train_data.index.max()
 
@@ -284,7 +291,7 @@ class KRNSLumpy:
 
                 self.model.update(
                     y=update_data[self.modeler.metric_col].to_numpy(),
-                    exogenous=update_data[self.variables],
+                    # exogenous=update_data[self.variables],
                 )
                 last_training_day = update_data.index.max()
 
@@ -296,7 +303,6 @@ class KRNSLumpy:
 
             # Make predictions
             if fcst_horizon > 0:
-
                 if test:
                     if self.variables is None:
                         self.variables = self.modeler.x_reg_columns
@@ -308,7 +314,9 @@ class KRNSLumpy:
                     ).sort_index()[self.variables]
 
                 prediction = self.model.predict(
-                    n_periods=fcst_horizon, exogenous=exogenous, return_conf_int=True
+                    n_periods=fcst_horizon,
+                    # exogenous=exogenous,
+                    return_conf_int=True,
                 )
 
                 pred = pd.DataFrame(
@@ -317,7 +325,7 @@ class KRNSLumpy:
                             last_training_day + datetime.timedelta(days=x)
                             for x in range(1, fcst_horizon + 1)
                         ],
-                        self.modeler.fcst_col: [fcst[1] for fcst in prediction[1]],
+                        self.modeler.fcst_col: [fcst for fcst in prediction[0]],
                     }
                 )
             else:
@@ -353,18 +361,16 @@ class KRNSLumpy:
                     < fcst_first_date + datetime.timedelta(days=n_days)
                 ]
 
-            pred["value_last_week"] = pred.apply(
-                lambda x: self.modeler.data.loc[x.giorno_gas - timedelta(days=7)][
-                    self.modeler.metric_col
-                ],
-                axis=1,
-            )
-
-            pred[self.modeler.fcst_col] = pred[
-                [self.modeler.fcst_col, "value_last_week"]
-            ].max(axis=1)
-
-            pred = pred.drop(["value_last_week"], axis=1)
+            # pred["value_last_week"] = pred.apply(
+            #     lambda x: self.modeler.data.loc[x.giorno_gas - timedelta(days=7)][
+            #         self.modeler.metric_col
+            #     ],
+            #     axis=1,
+            # )
+            # pred[self.modeler.fcst_col] = pred[
+            #     [self.modeler.fcst_col, "value_last_week"]
+            # ].max(axis=1)
+            # pred = pred.drop(["value_last_week"], axis=1)
 
             return pred
 

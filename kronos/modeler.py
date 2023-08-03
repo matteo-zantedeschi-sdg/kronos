@@ -265,10 +265,6 @@ class Modeler:
         """
 
         try:
-            # Create experiment
-            # experiment_path = f"/mlflow/experiments/{self.key_code}"
-            # self.ml_flower.get_experiment(experiment_path=experiment_path)
-
             # Train/Test split
             self.train_test_split()
 
@@ -277,29 +273,16 @@ class Modeler:
 
             for model_name, model in self.models.items():
                 try:
-                    # Start run
-                    # run_name = datetime.datetime.utcnow().isoformat()
-                    # run = self.ml_flower.start_run(run_name=run_name)
-
-                    # Store run id
-                    # run_id = run.info.run_id
-
                     # Preprocess
                     model.preprocess()
-
-                    # Log model params
-                    # model.log_params(client=self.ml_flower.client, run_id=run_id)
 
                     # Fit the model
                     model.fit()
 
                     # Log the model
-                    # model.log_model(artifact_path="model")
-
                     # Make predictions
                     test_data_first_date = self.test_data[self.date_col].min()
                     pred = model.predict(
-                        # n_days=self.n_test,
                         n_days=self.fcst_horizon,
                         fcst_first_date=test_data_first_date,
                         future_only=True,
@@ -326,103 +309,11 @@ class Modeler:
                         # run_id,
                     ] + list(train_evals.values())
 
-                    # for key, val in train_evals.items():
-                    #     self.ml_flower.client.log_metric(run_id, key, val)
-
-                    # self.ml_flower.end_run()
-
                 except Exception as e:
                     logger.error(f"### Model {model_name} training failed: {e}")
-                    # self.ml_flower.end_run()
 
         except Exception as e:
             logger.error(f"### Training failed: {e}")
-
-    # def prod_model_training(self) -> None:
-    #     """
-    #     A method to perform all the training activities:
-
-    #         1. Define an mlflow experiment.
-    #         2. Perform train/test split of data.
-    #         3. Load P{roduction model and perfrm:
-
-    #             1. Start an mlflow run.
-    #             2. Preprocess data (*e.g. renaming columns in prophet models*).
-    #             3. Log model params in the mlflow run.
-    #             4. Fit the model.
-    #             5. Log the fitted model as artifact in the mlflow run.
-    #             6. Compute evaluation metrics and add them in a *performance dataframe* (to later compare models).
-    #             7. Log metrics in the mlflow run.
-    #             8. End run.
-
-    #     :return: No return.
-    #     """
-
-    #     try:
-    #         logger.info("### Retrain Prod model")
-    #         _, flavor = self.ml_flower.load_model(
-    #             model_uri=f"models:/{self.key_code}/Production"
-    #         )
-    #         model_config = self.ml_flower.get_parameters(
-    #             f"models:/{self.key_code}/Production"
-    #         )
-    #         self.models_config = {flavor + "_1": model_config}
-    #         self.training()
-    #         self.winning_model_name = flavor + "_1"
-    #         self.deploy()
-    #         # self.winning_model_name = "prod_model"
-
-    #     except Exception as e:
-    #         logger.error(f"### Training of the prod model failed: {e}")
-
-    # def prod_model_eval(self) -> None:
-    #     """
-    #     Method used to retrieve the current production model from mlflow Model Registry.
-    #     The model is used to predict on test set and compute evaluation metrics.
-
-    #     :return: No return.
-    #     """
-
-    #     try:
-    #         # Retrieve the model
-    #         model, flavor = self.ml_flower.load_model(
-    #             model_uri=f"models:/{self.key_code}/Production"
-    #         )
-
-    #         krns_model = self.model_generation(
-    #             model_flavor=flavor, model_config={}, trained_model=model
-    #         )
-
-    #         # Predict with current production model (on test set)
-    #         test_data_first_date = (
-    #             self.test_data[self.date_col].sort_values(ascending=True).iloc[0]
-    #         )
-    #         pred = krns_model.predict(
-    #             n_days=self.fcst_horizon,
-    #             fcst_first_date=test_data_first_date,
-    #             future_only=True,
-    #             test=True,
-    #             return_conf_int=True,
-    #         )
-
-    #         # Compute rmse
-    #         prod_evals = self.evaluate_model(
-    #             actual=self.test_data.sort_values(by=[self.date_col], ascending=True)[
-    #                 self.fcst_horizon - self.horizon :
-    #             ][self.metric_col].values,
-    #             pred=pred.sort_values(by=[self.date_col], ascending=True)[
-    #                 self.fcst_horizon - self.horizon :
-    #             ][self.fcst_col].values,
-    #             metrics=self.fcst_competition_metrics,
-    #         )
-    #         self.df_performances.loc["prod_model"] = [
-    #             None,
-    #             krns_model,
-    #             None,
-    #         ] + list(prod_evals.values())
-
-    #     except Exception as e:
-    #         logger.warning(f"### Prod model prediction failed: {e}")
 
     def competition(self) -> None:
         """
@@ -476,125 +367,7 @@ class Modeler:
         except Exception as e:
             logger.error(f"### Competition failed: {e}")
 
-    # def unit_test(self, model_version_name: str, model_version_stage: str) -> str:
-    #     """
-    #     Method to perform an infrastructure unit test on a mlflow model.
-    #     The model is first retrieved from the mlflow Model Registry, then it is used to predict n data points.
-    #     If the number of output predictions matches the number of predictions required then the test result is *OK*, otherwise *KO*.
-
-    #     :param str model_version_name: The name of the model to test.
-    #     :param str model_version_stage: The stage of the model to test.
-
-    #     :return: *(str)* The unit test status: 'OK' or 'KO'.
-    #     """
-    #     try:
-    #         logger.info("### Performing model unit test")
-
-    #         # Retrieve the model
-    #         model, flavor = self.ml_flower.load_model(
-    #             model_uri=f"models:/{model_version_name}/{model_version_stage}"
-    #         )
-
-    #         krns_model = self.model_generation(
-    #             model_flavor=flavor, model_config={}, trained_model=model
-    #         )
-
-    #         # Predict with the model
-    #         unit_test_fcst_first_date = self.current_date + datetime.timedelta(days=1)
-    #         pred = krns_model.predict(
-    #             n_days=self.n_unit_test,
-    #             fcst_first_date=unit_test_fcst_first_date,
-    #             future_only=True,
-    #             test=True,
-    #             return_conf_int=True,
-    #         )
-
-    #         # Check quality
-    #         unit_test_status = "OK" if len(pred) == self.n_unit_test else "KO"
-    #         logger.info(
-    #             f"### Unit test result: {unit_test_status} - requested: {self.n_unit_test} - predicted: {len(pred)}"
-    #         )
-
-    #         return unit_test_status
-
-    #     except Exception as e:
-    #         logger.error(
-    #             f"### Unit test of model {model_version_name} in stage {model_version_stage} failed: {e}"
-    #         )
-
-    # def deploy(self) -> None:
-    #     """
-    #     Method to perform the winning model deploy into the mlflow Model Registry.
-    #     The main steps are:
-
-    #         1. Register the mlflow run artifact model into the mlflow Model Registry.
-    #         2. Set the model flavor as tag of the model, for information purposes only (not required by mlflow).
-    #         3. Promote the model to the "Staging" stage of the mlflow Model Registry.
-    #         4. Perform the model unit test.
-    #         5. If the unit test succeed, promote the model to the "Production" stage of the mlflow Model Registry.
-
-    #     :return: No return.
-    #     """
-    #     try:
-    #         # Get winning model run id
-    #         winning_model_run_id = self.df_performances.loc[self.winning_model_name][
-    #             "run_id"
-    #         ]
-    #         winning_model_config = self.df_performances.loc[self.winning_model_name][
-    #             "model_config"
-    #         ]
-
-    #         # Register the model
-    #         logger.info("### Registering the model")
-    #         model_uri = f"runs:/{winning_model_run_id}/model"
-
-    #         model_details = self.ml_flower.register_model(
-    #             model_uri=model_uri, model_name=self.key_code, timeout_s=10
-    #         )
-
-    #         # Set model flavor tag
-    #         if "model_flavor" in winning_model_config:
-    #             logger.info("### Setting model flavor tag")
-    #             self.ml_flower.set_model_tag(
-    #                 model_version_details=model_details,
-    #                 tag_key="model_flavor",
-    #                 tag_value=winning_model_config.get("model_flavor", ""),
-    #             )
-
-    #         # Transition to "staging" stage and archive the last one (if present)
-    #         model_version = self.ml_flower.promote_model(
-    #             model_version_details=model_details,
-    #             stage="staging",
-    #             archive_existing_versions=True,
-    #         )
-
-    #         # Unit test the model
-    #         logger.info("### Performing model unit test")
-    #         unit_test_status = self.unit_test(
-    #             model_version_name=model_version.name,
-    #             model_version_stage=model_version.current_stage,
-    #         )
-
-    #         if unit_test_status == "OK":
-    #             # Take the current staging model and promote it to production
-    #             # Archive the "already in production" model
-    #             # Return status code
-    #             logger.info("### Deploying model to Production.")
-    #             model_version = self.ml_flower.promote_model(
-    #                 model_version_details=model_version,
-    #                 stage="production",
-    #                 archive_existing_versions=True,
-    #             )
-
-    #             deploy_result = "OK" if model_version.status == "READY" else "KO"
-    #             logger.info(f"### Deploy result: {deploy_result}")
-
-    #     except Exception as e:
-    #         logger.error(
-    #             f"### Deployment of model {self.winning_model_name} failed: {e}"
-    #         )
-
-    def prediction(self, prod_predict=False) -> pd.DataFrame:
+    def prediction(self) -> pd.DataFrame:
         """
         Method to perform prediction using an mlflow model.
         The model is retrieved from the "Production" stage of the mlflow Model Registry, then it is used to provide the predictions.
@@ -604,21 +377,6 @@ class Modeler:
         """
 
         try:
-            # try:
-            #     # Retrieve production model
-            #     time.sleep(random.choice([1, 5, 10, 15, 20, 25, 28, 30]))
-
-            #     model, flavor = self.ml_flower.load_model(
-            #         model_uri=f"models:/{self.key_code}/Production"
-            #     )
-            #     if prod_predict:
-            #         logger.info("### Compute the prediction on the Prod model")
-            #         self.winning_model_name = "prod_model"
-            # except Exception as e:
-            #     logger.error(f"### Failed to load the model in production")
-
-            # if prod_predict:
-            #     self.train_test_split()
             model = self.winning_model.model
             flavor = self.winning_model_name.split("_")[0]
 

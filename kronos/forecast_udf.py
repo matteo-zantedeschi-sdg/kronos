@@ -113,10 +113,6 @@ def forecast_udf_gen(
         key_code = str(data[key_col].iloc[0])
         logger.info(f"### Working on pdr {key_code}")
 
-        # Retrieve training/predictions parameters
-        action = data[action_col].iloc[0]
-        quality = data[quality_col].iloc[0]
-
         current_date = max(data[data[metric_col].notna()][date_col])
         fcst_first_date = current_date + timedelta(days=1)
         fcst_horizon = (today_date + timedelta(days=horizon) - current_date).days
@@ -127,26 +123,8 @@ def forecast_udf_gen(
 
         n_unit_test = fcst_horizon
 
-        if data["classe_desc"][0] == "smooth" or data["classe_desc"][0] == "erratic":
-            # Annual seasonality covered by fourier terms
-            four_terms = FourierFeaturizer(365.25, 1)
-            y_prime, exog = four_terms.fit_transform(data.loc[:, metric_col])
-            exog[
-                "index"
-            ] = (
-                y_prime.index
-            )  # is exactly the same as manual calculation in the above cells
-            exog = exog.set_index(exog["index"])
-            exog.index.freq = "D"
-            exog = exog.drop(columns=["index"])
-
-            data = data.join(exog)
-
-        # Init an ml_flower instance
-        # ml_flower = MLFlower(client=client)
         # Init a modeler instance
         modeler = Modeler(
-            # ml_flower=ml_flower,
             data=data,
             key_col=key_col,
             date_col=date_col,
@@ -166,27 +144,6 @@ def forecast_udf_gen(
             future_only=future_only,
             x_reg_columns=x_reg_columns,
         )
-
-        # TRAINING #####
-        # prod_model_win = True if action == "prediction" else False
-        # if action == "competition":
-        #     modeler.training()
-
-        #     # modeler.prod_model_eval()
-
-        #     modeler.competition()
-
-        #     # if not modeler.winning_model_name == "prod_model":
-        #     #     modeler.deploy()
-        #     # else:
-        #     #     logger.info("### Prod model is still winning.")
-        # # elif action == "training":
-        # #     modeler.prod_model_training()
-        # # elif action == "prediction":
-        # #     pred = modeler.prediction(prod_predict=True)
-
-        # if action != "prediction":
-        #     pred = modeler.prediction()
 
         modeler.training()
         modeler.competition()
