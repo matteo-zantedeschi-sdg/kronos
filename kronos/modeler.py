@@ -47,6 +47,7 @@ class Modeler:
         fcst_competition_metric_weights: list,
         future_only: bool,
         x_reg_columns: list,
+        **kwargs,
     ) -> None:
         """
         Initialization method.

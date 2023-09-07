@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 def forecast_udf_gen(
-    client: MlflowClient,
     key_col: str,
     date_col: str,
     metric_col: str,
@@ -30,6 +29,7 @@ def forecast_udf_gen(
     fcst_competition_metric_weights: list,
     future_only: bool,
     x_reg_columns: list,
+    **kwargs,
 ):
     """
     A function used to create a pandas User Defined Function (UDF) with the specified parameters.
