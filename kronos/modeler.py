@@ -160,6 +160,7 @@ class Modeler:
                 "mape",
                 "max_perc_diff",
                 "max_perc_diff_3_days",
+                "mae"
             ]
             out = {}
 
@@ -174,6 +175,8 @@ class Modeler:
                         f"### Requested metric {metric} is not supported. Available metrics are: {supported_metrics}"
                     )
                 else:
+                    if metric == 'mae':
+                        value = np.abs(actual - pred).mean()
                     if metric == "rmse":
                         value = ((actual - pred) ** 2).mean() ** 0.5
                     elif metric == "mape":
