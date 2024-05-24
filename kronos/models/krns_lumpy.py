@@ -222,7 +222,7 @@ class KRNSLumpy:
             # )
             self.model = pm.auto_arima(
                 y=self.modeler.train_data.loc[:, self.modeler.metric_col],
-                # exogenous=self.modeler.train_data[self.modeler.x_reg_columns],
+                exogenous=self.modeler.train_data[self.modeler.x_reg_columns],
                 start_P=self.start_P,
                 max_P=self.max_P,
                 start_D=self.start_D,
@@ -291,7 +291,7 @@ class KRNSLumpy:
 
                 self.model.update(
                     y=update_data[self.modeler.metric_col].to_numpy(),
-                    # exogenous=update_data[self.variables],
+                    exogenous=update_data[self.variables],
                 )
                 last_training_day = update_data.index.max()
 
@@ -315,7 +315,7 @@ class KRNSLumpy:
 
                 prediction = self.model.predict(
                     n_periods=fcst_horizon,
-                    # exogenous=exogenous,
+                    exogenous=exogenous,
                     return_conf_int=True,
                 )
 

@@ -160,6 +160,7 @@ class Modeler:
                 "mape",
                 "max_perc_diff",
                 "max_perc_diff_3_days",
+                'max_mae_diff',
                 "mae"
             ]
             out = {}
@@ -190,6 +191,13 @@ class Modeler:
                         act_val = actual[idx_max]
                         pred_val = pred[idx_max]
                         value = abs(((act_val - pred_val) / (act_val + 0.0001)) * 100)
+                    elif metric == "max_mae_diff":
+                        # identifico l'osservazione col massimo scarto
+                        idx_max = np.argmax(np.abs(actual))
+                        # estraggo actual e pred relativi e calcolo il delta perc
+                        act_val = actual[idx_max]
+                        pred_val = pred[idx_max]
+                        value = abs((act_val - pred_val))
                     elif metric == "max_perc_diff_3_days":
                         # identifico l'osservazione col massimo scarto
                         actual_3 = actual[:3]

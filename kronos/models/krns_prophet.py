@@ -220,6 +220,12 @@ class KRNSProphet:
 
             # Add country holidays
             self.model.add_country_holidays(country_name=self.country_holidays)
+            
+            # Add exogenous variable
+            def add_regressor(reg):
+                self.model.add_regressor(reg)
+            
+            list(map(add_regressor, self.modeler.x_reg_columns))
 
             # Fit the model
             self.model.fit(self.modeler.train_data)
@@ -279,6 +285,12 @@ class KRNSProphet:
 
             # Add country holidays
             model.add_country_holidays(country_name=self.model.country_holidays)
+            
+            # Add exogenous variable
+            def add_regressor(reg):
+                self.model.add_regressor(reg)
+            
+            list(map(add_regressor, self.modeler.x_reg_columns))
 
             # Fit the model with warm start
             model.fit(df_update, init=self.stan_init(self.model))
@@ -345,6 +357,10 @@ class KRNSProphet:
                 ]
                 self.model = self.update_model(df_update=update_data)
                 last_training_day = self.model.history_dates.max().date()
+                
+            
+            
+            future_records = {exog: self.modeler.data[self.modeler.data["ds"]>=fcst_first_date][exog] for exog in self.modeler.x_reg_columns}
 
             # Compute the difference between last_training_day and fcst_first_date
             difference = (fcst_first_date - last_training_day).days
@@ -363,6 +379,11 @@ class KRNSProphet:
             # Add floor and cap
             pred_config["floor"] = self.floor
             pred_config["cap"] = self.cap
+            
+            # Add exogeneous variable
+            for regressor_name, time_series in future_records.items():
+                time_series.reset_index(inplace=True, drop=True)
+                pred_config[regressor_name] = time_series[:fcst_first_date]
 
             # Make predictions
             pred = self.model.predict(pred_config)
