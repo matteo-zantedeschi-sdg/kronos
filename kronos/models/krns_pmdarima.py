@@ -227,6 +227,7 @@ class KRNSPmdarima:
                 self.modeler.train_data = self.modeler.train_data.join(fouriers)
                 train_variables = train_variables.join(fouriers)
 
+            
             # Define the model
             self.model = pm.auto_arima(
                 y=self.modeler.train_data.loc[:, self.modeler.metric_col],

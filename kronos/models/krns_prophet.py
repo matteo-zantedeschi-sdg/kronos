@@ -288,7 +288,7 @@ class KRNSProphet:
             
             # Add exogenous variable
             def add_regressor(reg):
-                self.model.add_regressor(reg)
+                model.add_regressor(reg)
             
             list(map(add_regressor, self.modeler.x_reg_columns))
 
@@ -360,7 +360,7 @@ class KRNSProphet:
                 
             
             
-            future_records = {exog: self.modeler.data[self.modeler.data["ds"]>=fcst_first_date][exog] for exog in self.modeler.x_reg_columns}
+            #future_records = {exog: self.modeler.data[self.modeler.data["ds"]>=fcst_first_date][exog] for exog in self.modeler.x_reg_columns}
 
             # Compute the difference between last_training_day and fcst_first_date
             difference = (fcst_first_date - last_training_day).days
@@ -381,9 +381,12 @@ class KRNSProphet:
             pred_config["cap"] = self.cap
             
             # Add exogeneous variable
-            for regressor_name, time_series in future_records.items():
-                time_series.reset_index(inplace=True, drop=True)
-                pred_config[regressor_name] = time_series[:fcst_first_date]
+            if len(self.modeler.x_reg_columns)>0:
+                future_records = {exog: self.modeler.data[self.modeler.data["ds"]>=fcst_first_date][[exog, "ds"]] for exog in self.modeler.x_reg_columns}
+                for regressor_name, time_series in future_records.items():
+                    time_series['ds'] = pd.to_datetime(time_series['ds'])
+                    pred_config = pred_config.merge(time_series[[regressor_name, 'ds']], how='left', on=['ds'])
+
 
             # Make predictions
             pred = self.model.predict(pred_config)

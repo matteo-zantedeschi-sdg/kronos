@@ -220,9 +220,14 @@ class KRNSLumpy:
             # self.model.fit(
             #     y=self.modeler.train_data.loc[:, self.modeler.metric_col],
             # )
+            if len(self.modeler.x_reg_columns)<1:
+                exogenous = None
+            else:
+                exogenous = self.modeler.train_data[self.modeler.x_reg_columns]
+                exogenous = exogenous.apply(pd.to_numeric, errors='coerce')
             self.model = pm.auto_arima(
                 y=self.modeler.train_data.loc[:, self.modeler.metric_col],
-                exogenous=self.modeler.train_data[self.modeler.x_reg_columns],
+                exogenous=exogenous,
                 start_P=self.start_P,
                 max_P=self.max_P,
                 start_D=self.start_D,

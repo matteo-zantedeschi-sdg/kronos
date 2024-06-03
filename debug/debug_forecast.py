@@ -27,10 +27,10 @@ def get_param(param_name):
     return (df_param[df_param["chiave"] == (param_name.upper())]["valore"]).values[0]
 
 
-today = datetime.datetime.strptime("2023-01-22", "%Y-%m-%d").date()
+today = datetime.datetime.strptime("2023-11-30", "%Y-%m-%d").date()
 
 df = pd.read_csv(
-    "debug/pdr.csv"
+    "debug/pdr2.csv"
     # "C:/data/hera/df_03081001598913.csv"
 )
 
@@ -127,21 +127,22 @@ forecast_udf = forecast_udf_gen(
                               "weekly_seasonality":True,
                               "daily_seasonality":False,
                               "seasonality_mode":"multiplicative",
-                              "floor":0},
-                "lumpy_naive":{"model_flavor":"lumpy",
-                               "start_P": 0, 
-                               "max_P": 0,
-                               "start_D": 0, 
-                               "max_D": 0, 
-                               "start_Q": 0, 
-                               "max_Q": 0,
-                               "m": 1, 
-                               "start_p": 0, 
-                               "max_p": 0, 
-                               "start_d": 1,
-                               "max_d": 1, 
-                               "start_q": 0, 
-                               "max_q": 0}},
+                              "floor":0}#,
+                #"lumpy_naive":{"model_flavor":"lumpy",
+                #               "start_P": 0, 
+                #               "max_P": 0,
+                #               "start_D": 0, 
+                #               "max_D": 0, 
+                #               "start_Q": 0, 
+                #               "max_Q": 0,
+                #               "m": 1, 
+                #               "start_p": 0, 
+                #               "max_p": 0, 
+                #               "start_d": 1,
+                #               "max_d": 1, 
+                #               "start_q": 0, 
+                #               "max_q": 0}
+                },
     # models_config= {"lumpy":{"model_flavor":"lumpy", "start_P": 1, "max_P": 1, "start_D": 0, "max_D": 0, "start_Q": 1, "max_Q": 1, "m": 1, "start_p": 1, "max_p": 1, "start_d": 0, "max_d": 1, "start_q": 1, "max_q": 1}},
     # models_config= {"tensorflow_1":{"model_flavor":"tensorflow","nn_type":"rnn","n_units":128,"activation":"relu","epochs":10,"n_inputs":30}},
     # current_date=datetime.datetime.strptime('2022-11-16', '%Y-%m-%d').date(),
