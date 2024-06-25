@@ -32,7 +32,8 @@ class KRNSLumpy:
         start_p: int = 1,
         max_p: int = 1,
         start_d: int = 0,
-        max_d: int = 1,
+        d: int = 0,
+        max_d: int = 0,
         start_q: int = 1,
         max_q: int = 1,
     ) -> None:
@@ -74,7 +75,8 @@ class KRNSLumpy:
         self.start_p = start_p
         self.max_p = max_p
         self.start_d = start_d
-        self.max_d = max_d
+        self.d = self.start_d
+        #self.max_d = max_d
         self.start_q = start_q
         self.max_q = max_q
 
@@ -88,8 +90,9 @@ class KRNSLumpy:
             "m": self.m,
             "start_p": self.start_p,
             "max_p": self.max_p,
-            "start_d": self.start_d,
-            "max_d": self.max_d,
+            #"start_d": self.start_d,
+            #"max_d": self.max_d,
+            "d": self.d,
             "start_q": self.start_q,
             "max_q": self.max_q,
         }
@@ -237,12 +240,15 @@ class KRNSLumpy:
                 m=self.m,
                 start_p=self.start_p,
                 max_p=self.max_p,
-                start_d=self.start_d,
-                max_d=self.max_d,
+                d=self.start_d,
+                #max_d=self.max_d,
                 start_q=self.start_q,
                 max_q=self.max_q,
                 seasonal=True,
             )
+            
+            if type(self.modeler.train_data.index[0]) != datetime.date:
+                self.preprocess()
             # Add last training day attribute
             self.model.last_training_day = self.modeler.train_data.index.max()
 
@@ -376,6 +382,8 @@ class KRNSLumpy:
             #     [self.modeler.fcst_col, "value_last_week"]
             # ].max(axis=1)
             # pred = pred.drop(["value_last_week"], axis=1)
+            
+            pred['volume_giorno_fcst'] = self.modeler.test_data.iloc[0]['volume_giorno']
 
             return pred
 

@@ -28,6 +28,7 @@ class KRNSProphet:
         cap: int = None,
         country_holidays: str = "IT",
         model: Prophet = None,
+        with_exogenous = False
     ) -> None:
         """
         Initialization method.
@@ -87,6 +88,8 @@ class KRNSProphet:
         self.country_holidays = (
             country_holidays if not model else model.country_holidays
         )
+        
+        self.with_exogenous = with_exogenous
 
         # Floor/Cap
         if floor:
@@ -213,6 +216,8 @@ class KRNSProphet:
                 yearly_seasonality=self.yearly_seasonality,
                 seasonality_mode=self.seasonality_mode,
             )
+            
+                
 
             # Add floor and cap
             self.modeler.train_data["floor"] = self.floor
@@ -221,11 +226,12 @@ class KRNSProphet:
             # Add country holidays
             self.model.add_country_holidays(country_name=self.country_holidays)
             
-            # Add exogenous variable
-            def add_regressor(reg):
-                self.model.add_regressor(reg)
-            
-            list(map(add_regressor, self.modeler.x_reg_columns))
+            if self.with_exogenous:
+                # Add exogenous variable
+                def add_regressor(reg):
+                    self.model.add_regressor(reg)
+                
+                list(map(add_regressor, self.modeler.x_reg_columns))
 
             # Fit the model
             self.model.fit(self.modeler.train_data)
@@ -286,11 +292,12 @@ class KRNSProphet:
             # Add country holidays
             model.add_country_holidays(country_name=self.model.country_holidays)
             
-            # Add exogenous variable
-            def add_regressor(reg):
-                model.add_regressor(reg)
-            
-            list(map(add_regressor, self.modeler.x_reg_columns))
+            if(self.with_exogenous):
+                # Add exogenous variable
+                def add_regressor(reg):
+                    model.add_regressor(reg)
+                
+                list(map(add_regressor, self.modeler.x_reg_columns))
 
             # Fit the model with warm start
             model.fit(df_update, init=self.stan_init(self.model))
@@ -311,7 +318,7 @@ class KRNSProphet:
         fcst_first_date: datetime.date = datetime.date.today(),
         future_only: bool = True,
         test: bool = False,
-        return_conf_int: bool = True,
+        return_conf_int: bool = True
     ) -> pd.DataFrame:
         """
         Predict using the fitted model.
@@ -381,7 +388,7 @@ class KRNSProphet:
             pred_config["cap"] = self.cap
             
             # Add exogeneous variable
-            if len(self.modeler.x_reg_columns)>0:
+            if len(self.modeler.x_reg_columns)>0 and self.with_exogenous==True:
                 future_records = {exog: self.modeler.data[self.modeler.data["ds"]>=fcst_first_date][[exog, "ds"]] for exog in self.modeler.x_reg_columns}
                 for regressor_name, time_series in future_records.items():
                     time_series['ds'] = pd.to_datetime(time_series['ds'])

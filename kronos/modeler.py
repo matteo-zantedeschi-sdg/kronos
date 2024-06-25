@@ -245,7 +245,7 @@ class Modeler:
 
                 self.test_data = self.data.sort_values(
                     by=[self.date_col], ascending=False
-                ).iloc[self.n_test : self.n_test + self.fcst_horizon, :]
+                ).iloc[self.fcst_horizon : self.n_test + self.fcst_horizon, :]
 
                 self.pred_data = self.data.sort_values(
                     by=[self.date_col], ascending=False
@@ -550,6 +550,7 @@ class Modeler:
                     cap=self.max_value,
                     country_holidays=model_config.get("country_holidays", "IT"),
                     model=trained_model,
+                    with_exogenous=eval(model_config.get("with_exogenous", "False"))
                 )
             elif model_flavor == "pmdarima":
                 model = KRNSPmdarima(
